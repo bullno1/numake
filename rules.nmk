@@ -6,6 +6,7 @@ double-%: %
 	cat $m >> $@
 
 a: b c
+	echo a
 	cat b c > $@
 
 b: c

@@ -111,7 +111,7 @@ class Context(object):
             "NUMAKE_START_DIR": self.start_dir,
             "NUMAKE_TIMESTAMP": str(self.timestamp),
             "NUMAKE_PARENT": target.absolute,
-            "NUMAKE_INDENT": "  ",
+            "NUMAKE_INDENT": "",
             "m": match
         }
         env.update(build_vars)
@@ -132,7 +132,7 @@ class Context(object):
         write_thread.start()
 
         for line in build_process.stdout:
-            self.logger.info(line.decode("utf-8").rstrip("\r\n"))
+            self.logger.info("  {0}", line.decode("utf-8").rstrip("\r\n"))
 
         write_thread.join()
         build_process.wait()
@@ -158,7 +158,7 @@ class Context(object):
                 return target_checksum
         else:
             return fail(
-                "Failed to build targetn {0}",
+                "Failed to build target: {0}",
                 target.get_friendly(self)
             )
 
@@ -799,7 +799,7 @@ def checksum(path):
 
 if __name__ == "__main__":
     try:
-        sys.exit(main(*sys.argv))
+        main(*sys.argv)
     except Exception as e:
-        print(":", str(e))
+        print(str(e))
         sys.exit(1)
