@@ -1,0 +1,17 @@
+test:
+	echo abc=${NUMAKE}
+
+double-%: %
+	cat $m > $@
+	cat $m >> $@
+
+a: b c
+	cat b c > $@
+
+b: c
+	echo "B" > $@
+	cat c >> $@
+
+c: double-d
+	echo "C" > $@
+	cat double-d >> $@
