@@ -58,7 +58,7 @@ class Context(object):
         self._logger = None
         self.start_dir = start_dir or os.environ.get("NUMAKE_START_DIR") or os.path.abspath(os.path.curdir)
         self.root_dir = root_dir or os.environ.get("NUMAKE_ROOT") or Context._find_root(self.start_dir)
-        self.indent = indent or os.environ.get("NUMAKE_INDENT") or ""
+        self.indent = indent or ""
         timestamp = timestamp or os.environ.get("NUMAKE_TIMESTAMP")
         self._timestamp = int(timestamp) if timestamp else None
         parent = parent or os.environ.get("NUMAKE_PARENT")
@@ -111,7 +111,6 @@ class Context(object):
             "NUMAKE_START_DIR": self.start_dir,
             "NUMAKE_TIMESTAMP": str(self.timestamp),
             "NUMAKE_PARENT": target.absolute,
-            "NUMAKE_INDENT": "",
             "m": match
         }
         env.update(build_vars)
