@@ -1,0 +1,23 @@
+#!/bin/sh -e
+
+EXPECTED_START_DIR=$(pwd) numake check-start-dir
+EXPECTED_ROOT_DIR=$(pwd) numake check-root-dir
+
+mkdir subdir
+cd subdir
+
+assert-fail numake
+
+EXPECTED_START_DIR=$(pwd) numake ../check-start-dir
+EXPECTED_ROOT_DIR=$(readlink -f ../) numake ../check-root-dir
+
+# Make subdir a new numake project
+numake --init
+
+# This will fail because rules.nmk cannot be found
+EXPECTED_START_DIR=$(pwd) assert-fail numake ../check-start-dir
+EXPECTED_ROOT_DIR=$(pwd) assert-fail numake ../check-root-dir
+
+cp ../rules.nmk .
+EXPECTED_START_DIR=$(pwd) numake check-start-dir
+EXPECTED_ROOT_DIR=$(pwd) numake check-root-dir

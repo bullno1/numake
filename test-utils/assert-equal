@@ -5,5 +5,12 @@ eval "ACTUAL=$2"
 [ "$EXPECTED" == "$ACTUAL" ]
 EXIT_CODE=$?
 
-echo "assert-equal $1 $2 ($EXPECTED vs $ACTUAL) -> $EXIT_CODE"
+if [ "$EXIT_CODE" -eq 0 ]; then
+	echo "assert-equal $1 $2 -> true"
+else
+	echo "assert-equal $1 $2 -> false"
+	echo "Expected: $EXPECTED"
+	echo "Actual: $ACTUAL"
+fi
+
 exit $EXIT_CODE

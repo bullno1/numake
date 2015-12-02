@@ -3,6 +3,11 @@
 EXIT_CODE=0
 
 main() {
+	if [ -d .numake ]; then
+		echo ".numake directory exists, it will intefere with tests"
+		exit 1
+	fi
+
 	rm -rf .tests
 
 	test_with_version 2
@@ -47,7 +52,7 @@ run_tests() {
 	for testcase in `ls $TEST_DIR/cases`
 	do
 		pushd "$TEST_DIR/cases/$testcase" > /dev/null
-		echo "Running test: $testcase"
+		echo "Test: $testcase"
 		echo "----------------------------------"
 		if ./run; then
 			echo
@@ -58,6 +63,7 @@ run_tests() {
 			EXIT_CODE=1
 		fi
 		echo "----------------------------------"
+		echo
 		popd > /dev/null
 	done
 }
