@@ -585,6 +585,7 @@ class Rule(object):
     @staticmethod
     def parse(ctx, path):
         friendly_path = path.get_friendly(ctx)
+        ctx.logger.debug(" Parsing rule file: {0}", friendly_path)
         rule_dir = os.path.dirname(path.absolute)
         if not os.path.isfile(path.absolute):
             return fail("File not found: {0}", friendly_path)
@@ -619,6 +620,7 @@ class Rule(object):
                     # If this is an include directive
                     subrule_file_name = line[len("-include") + 1:]
                     subrule_file_path = os.path.join(rule_dir, subrule_file_name)
+                    ctx.logger.trace(" Parsing include file: {0}", subrule_file_path)
                     rules.extend(Rule.parse(ctx, Path(subrule_file_path)))
                 elif ":" in line:
                     # If this is a rule header line
