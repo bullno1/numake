@@ -6,6 +6,6 @@ python:
   - "3.4"
   - "3.5"
   - "pypy"
-script: ./test
+script: ./test-with-current-python
 sudo: required
 dist: trusty
