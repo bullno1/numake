@@ -7,6 +7,15 @@ main() {
 	echo
 	test_with_version 3 $* || EXIT_CODE=1
 
+	echo
+	if type pypy 2> /dev/null; then
+		PYPY_PATH=`which pypy`
+		echo "Found PyPy at: ${PYPY_PATH}"
+		test_with_python pypy ${PYPY_PATH} $* || EXIT_CODE=1
+	else
+		echo "Could not find PyPy"
+	fi
+
 	exit $EXIT_CODE
 }
 
@@ -24,14 +33,22 @@ test_with_version() {
 
 	if [ ! -z "$PYTHON_PATH" ]; then
 		echo "Found Python ${VERSION} at: $PYTHON_PATH"
-		VENV_DIR=".tests/venv-${VERSION}"
-		rm -rf ${VENV_DIR}
-		mkdir -p ${VENV_DIR}
-		virtualenv -p "$PYTHON_PATH" --no-site-packages "${VENV_DIR}"
-		source "${VENV_DIR}/bin/activate" && ./test-with-current-python $*
+		test_with_python ${VERSION} ${PYTHON_PATH} $*
 	else
 		echo "Could not find Python ${VERSION}"
 	fi
+}
+
+test_with_python() {
+	VERSION=$1
+	PYTHON_PATH=$2
+	shift 2
+
+	VENV_DIR=".tests/venv-${VERSION}"
+	rm -rf ${VENV_DIR}
+	mkdir -p ${VENV_DIR}
+	virtualenv -p "$PYTHON_PATH" --no-site-packages "${VENV_DIR}"
+	source "${VENV_DIR}/bin/activate" && ./test-with-current-python $*
 }
 
 main $*
