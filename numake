@@ -204,10 +204,6 @@ class Context(object):
         return os.path.join(self.root_dir, ".numake")
 
     @property
-    def bin_dir(self):
-        return os.path.join(self.meta_dir, "bin")
-
-    @property
     def db(self):
         if not self._db:
             self._db = Db(self)
