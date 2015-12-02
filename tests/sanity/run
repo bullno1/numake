@@ -15,10 +15,3 @@ assert-fail 'false'
 assert 'assert-fail false'
 assert-equal '1' '1'
 assert-fail 'assert-equal 1 2'
-
-assert '[[ ! `which python` = "/usr"* ]]'
-assert '[[ ! `which python` = "/bin"* ]]'
-
-echo "Python version: `python -V 2>&1`"
-echo "Expected version: ${NUMAKE_PYTHON_VER}.*"
-assert '[[ `python -V 2>&1` = "Python "${NUMAKE_PYTHON_VER}* ]]'

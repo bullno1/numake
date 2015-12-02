@@ -1,0 +1,41 @@
+#!/bin/bash -e
+
+if [ -d .numake ]; then
+	echo ".numake directory exists, it will intefere with tests"
+	exit 1
+fi
+
+PYTHON_VESION_STRING=`python -V 2>&1`
+PYTHON_VERSION=${PYTHON_VESION_STRING#Python *}
+echo "Python version: ${PYTHON_VERSION}"
+
+TEST_DIR=".tests/${PYTHON_VERSION}"
+rm -rf "$TEST_DIR"
+mkdir -p "$TEST_DIR"
+cp -r tests/* "$TEST_DIR"
+
+export PATH="$(readlink -f "test-utils"):$PATH"
+
+TESTS=$*
+if [ -z "$TESTS" ]; then
+	TESTS=`ls "$TEST_DIR"`
+fi
+
+EXIT_CODE=0
+for testcase in $TESTS
+do
+	pushd "$TEST_DIR/$testcase" > /dev/null
+	echo ""
+	echo "Test: $testcase"
+	echo "----------------------------------"
+	if ./run; then
+		echo "----------------------------------"
+		echo "passed"
+	else
+		echo "----------------------------------"
+		echo "failed"
+		EXIT_CODE=1
+	fi
+	popd > /dev/null
+done
+exit $EXIT_CODE

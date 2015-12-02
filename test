@@ -3,16 +3,9 @@
 EXIT_CODE=0
 
 main() {
-	if [ -d .numake ]; then
-		echo ".numake directory exists, it will intefere with tests"
-		exit 1
-	fi
-
-	rm -rf .tests
-
-	test_with_version 2 $*
+	test_with_version 2 $* || EXIT_CODE=1
 	echo
-	test_with_version 3 $*
+	test_with_version 3 $* || EXIT_CODE=1
 
 	exit $EXIT_CODE
 }
@@ -31,48 +24,14 @@ test_with_version() {
 
 	if [ ! -z "$PYTHON_PATH" ]; then
 		echo "Found Python ${VERSION} at: $PYTHON_PATH"
-		run_tests ${VERSION} "$PYTHON_PATH" $*
+		VENV_DIR=".tests/venv-${VERSION}"
+		rm -rf ${VENV_DIR}
+		mkdir -p ${VENV_DIR}
+		virtualenv -p "$PYTHON_PATH" --no-site-packages "${VENV_DIR}"
+		source "${VENV_DIR}/bin/activate" && ./test-with-current-python $*
 	else
 		echo "Could not find Python ${VERSION}"
 	fi
-}
-
-run_tests() {
-	TEST_DIR=".tests/$1"
-
-	mkdir -p "$TEST_DIR/bin"
-	ln -s $2 "$TEST_DIR/bin/python"
-	BIN_DIR=`readlink -f $TEST_DIR/bin`
-
-	mkdir -p "$TEST_DIR/cases"
-	cp -r tests/* "$TEST_DIR/cases"
-
-	UTILS_DIR=`readlink -f "test-utils"`
-	export PATH="$UTILS_DIR:$BIN_DIR:$PATH"
-	export NUMAKE_PYTHON_VER=$1
-
-	shift 2
-	TESTS=$*
-	if [ -z "$TESTS" ]; then
-		TESTS=`ls $TEST_DIR/cases`
-	fi
-
-	for testcase in $TESTS
-	do
-		pushd "$TEST_DIR/cases/$testcase" > /dev/null
-		echo ""
-		echo "Test: $testcase"
-		echo "----------------------------------"
-		if ./run; then
-			echo "----------------------------------"
-			echo "passed"
-		else
-			echo "----------------------------------"
-			echo "failed"
-			EXIT_CODE=1
-		fi
-		popd > /dev/null
-	done
 }
 
 main $*
