@@ -116,7 +116,7 @@ class Context(object):
         env.update(build_vars)
 
         rm(target.absolute)
-        self.logger.trace(" Begin subprocess")
+        self.logger.debug(" Begin subprocess")
         build_process = subprocess.Popen(
             ["sh", "-s", "-e", out], # $@ will point to output like in Makefile
             stdin = subprocess.PIPE,
@@ -135,7 +135,7 @@ class Context(object):
 
         write_thread.join()
         build_process.wait()
-        self.logger.trace(" End subprocess")
+        self.logger.debug(" End subprocess")
 
         if build_process.wait() == 0:
             if rule.is_live:
@@ -286,7 +286,7 @@ class Context(object):
                 return self.rebuild(target, rule, match)
 
         # Check all dependencies
-        self.logger.trace(" Begin check dependencies")
+        self.logger.debug(" Begin check dependencies")
         dep_context = self.create_child(target)
         need_rebuild = False
         for dependency, checksum in db.get_dependencies(target):
@@ -300,7 +300,7 @@ class Context(object):
                 dep_context.logger.debug(" {0} changed", dependency.get_friendly(self))
                 need_rebuild = True
                 break
-        self.logger.trace(" End check dependencies")
+        self.logger.debug(" End check dependencies")
 
         if need_rebuild:
             return self.rebuild(target, rule, match)
@@ -634,7 +634,6 @@ class Rule(object):
                             build_vars = build_vars,
                             extra_attrs = extra_attrs
                         )
-                        # TODO: prepend and append lines to rule
                         rules.append(rule)
 
                         rule_lines = []
