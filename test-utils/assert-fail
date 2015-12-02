@@ -1,0 +1,7 @@
+#!/bin/sh
+
+eval $@
+EXIT_CODE=$?
+
+echo "assert-fail $* -> $EXIT_CODE"
+[ $EXIT_CODE != 0 ]

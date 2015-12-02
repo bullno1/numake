@@ -1,0 +1,9 @@
+#!/bin/sh
+
+eval "EXPECTED=$1"
+eval "ACTUAL=$2"
+[ "$EXPECTED" == "$ACTUAL" ]
+EXIT_CODE=$?
+
+echo "assert-equal $1 $2 ($EXPECTED vs $ACTUAL) -> $EXIT_CODE"
+exit $EXIT_CODE

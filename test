@@ -1,0 +1,65 @@
+#!/bin/bash -e
+
+EXIT_CODE=0
+
+main() {
+	rm -rf .tests
+
+	test_with_version 2
+	echo
+	test_with_version 3
+
+	exit $EXIT_CODE
+}
+
+test_with_version() {
+	if [[ `python -V 2>&1` == "Python ${1}"* ]]; then
+		PYTHON_PATH=`which python`
+	elif [[ `python${1} -V 2>&1` == "Python ${1}"* ]]; then
+		PYTHON_PATH=`which python${1}`
+	else
+		PYTHON_PATH=
+	fi
+
+	if [ ! -z "$PYTHON_PATH" ]; then
+		echo "Found Python ${1} at: $PYTHON_PATH"
+		run_tests $1 "$PYTHON_PATH"
+	else
+		echo "Could not find Python ${1}"
+	fi
+}
+
+run_tests() {
+	TEST_DIR=".tests/$1"
+
+	mkdir -p "$TEST_DIR/bin"
+	ln -s $2 "$TEST_DIR/bin/python"
+	BIN_DIR=`readlink -f $TEST_DIR/bin`
+
+	mkdir -p "$TEST_DIR/cases"
+	cp -r tests/* "$TEST_DIR/cases"
+
+	UTILS_DIR=`readlink -f "test-utils"`
+	export PATH="$UTILS_DIR:$BIN_DIR:$PATH"
+	export NUMAKE_PYTHON_VER=$1
+
+	echo
+	for testcase in `ls $TEST_DIR/cases`
+	do
+		pushd "$TEST_DIR/cases/$testcase" > /dev/null
+		echo "Running test: $testcase"
+		echo "----------------------------------"
+		if ./run; then
+			echo
+			echo "passed"
+		else
+			echo
+			echo "failed"
+			EXIT_CODE=1
+		fi
+		echo "----------------------------------"
+		popd > /dev/null
+	done
+}
+
+main
