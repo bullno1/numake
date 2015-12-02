@@ -7,3 +7,5 @@ python:
   - "3.5"
   - "pypy"
 script: ./test
+sudo: required
+dist: trusty
