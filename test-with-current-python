@@ -9,7 +9,7 @@ PYTHON_VESION_STRING=`python -V 2>&1`
 PYTHON_VERSION=${PYTHON_VESION_STRING#Python *}
 echo "Python version: ${PYTHON_VERSION}"
 
-TEST_DIR=".tests/$(echo ${PYTHON_VERSION} | md5sum | cut -f1 -d' ')"
+TEST_DIR=".tests/pythons/$(echo ${PYTHON_VERSION} | md5sum | cut -f1 -d' ')"
 rm -rf "$TEST_DIR"
 mkdir -p "$TEST_DIR"
 cp -r tests/* "$TEST_DIR"

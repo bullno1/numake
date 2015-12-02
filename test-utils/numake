@@ -1,1 +1,9 @@
-../numake
+#!/bin/sh
+
+NUMAKE_PATH=$(readlink -f $(dirname $(readlink -f $0))/../numake)
+if command -v coverage > /dev/null; then
+	which coverage
+	exec coverage run ${NUMAKE_PATH} $*
+else
+	exec ${NUMAKE_PATH} $*
+fi
