@@ -1,0 +1,8 @@
+#!/bin/sh -e
+
+EXPECTED_PWD=$(pwd) numake all
+EXPECTED_PWD=$(pwd)/subdir numake subdir/sub
+
+cd subdir
+EXPECTED_PWD=$(readlink -f ../) numake ../all
+EXPECTED_PWD=$(pwd) numake sub
