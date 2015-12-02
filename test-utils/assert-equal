@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 eval "EXPECTED=$1"
 eval "ACTUAL=$2"
