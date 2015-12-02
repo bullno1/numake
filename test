@@ -10,27 +10,30 @@ main() {
 
 	rm -rf .tests
 
-	test_with_version 2
+	test_with_version 2 $*
 	echo
-	test_with_version 3
+	test_with_version 3 $*
 
 	exit $EXIT_CODE
 }
 
 test_with_version() {
-	if [[ `python -V 2>&1` == "Python ${1}"* ]]; then
+	VERSION=$1
+	shift
+
+	if [[ `python -V 2>&1` == "Python $VERSION"* ]]; then
 		PYTHON_PATH=`which python`
-	elif [[ `python${1} -V 2>&1` == "Python ${1}"* ]]; then
-		PYTHON_PATH=`which python${1}`
+	elif [[ `python${VERSION} -V 2>&1` == "Python $VERSION"* ]]; then
+		PYTHON_PATH=`which python${VERSION}`
 	else
 		PYTHON_PATH=
 	fi
 
 	if [ ! -z "$PYTHON_PATH" ]; then
-		echo "Found Python ${1} at: $PYTHON_PATH"
-		run_tests $1 "$PYTHON_PATH"
+		echo "Found Python ${VERSION} at: $PYTHON_PATH"
+		run_tests ${VERSION} "$PYTHON_PATH" $*
 	else
-		echo "Could not find Python ${1}"
+		echo "Could not find Python ${VERSION}"
 	fi
 }
 
@@ -48,24 +51,28 @@ run_tests() {
 	export PATH="$UTILS_DIR:$BIN_DIR:$PATH"
 	export NUMAKE_PYTHON_VER=$1
 
-	echo
-	for testcase in `ls $TEST_DIR/cases`
+	shift 2
+	TESTS=$*
+	if [ -z "$TESTS" ]; then
+		TESTS=`ls $TEST_DIR/cases`
+	fi
+
+	for testcase in $TESTS
 	do
 		pushd "$TEST_DIR/cases/$testcase" > /dev/null
+		echo ""
 		echo "Test: $testcase"
 		echo "----------------------------------"
 		if ./run; then
-			echo
+			echo "----------------------------------"
 			echo "passed"
 		else
-			echo
+			echo "----------------------------------"
 			echo "failed"
 			EXIT_CODE=1
 		fi
-		echo "----------------------------------"
-		echo
 		popd > /dev/null
 	done
 }
 
-main
+main $*
