@@ -1,5 +1,8 @@
 #!/bin/sh -e
 
+# The working directory where a recipe is executed must always be the same
+# as the rule file where the recipe is defined
+
 EXPECTED_PWD=$(pwd) numake all
 EXPECTED_PWD=$(pwd)/subdir numake subdir/sub
 

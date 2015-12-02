@@ -1,5 +1,7 @@
 #!/bin/sh -e
 
+# Ensure that all required scripts are present and function as expected
+
 which assert > /dev/null
 which assert-equal > /dev/null
 which assert-fail > /dev/null

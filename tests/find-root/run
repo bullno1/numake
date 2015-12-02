@@ -1,5 +1,9 @@
 #!/bin/sh -e
 
+# NUMAKE_START_DIR is always the same as the directory where numake is called
+# NUMAKE_ROOT_DIR is the first directory that contains a .numake directory
+# when searching upward from the current directory
+
 EXPECTED_START_DIR=$(pwd) numake check-start-dir
 EXPECTED_ROOT_DIR=$(pwd) numake check-root-dir
 
