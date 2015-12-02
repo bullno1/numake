@@ -21,4 +21,4 @@ assert '[[ ! `which python` = "/bin"* ]]'
 
 echo "Python version: `python -V 2>&1`"
 echo "Expected version: ${NUMAKE_PYTHON_VER}.*"
-assert '[[ `python -V 2>&1` == "Python "${NUMAKE_PYTHON_VER}* ]]'
+assert '[[ `python -V 2>&1` = "Python "${NUMAKE_PYTHON_VER}* ]]'

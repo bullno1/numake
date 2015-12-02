@@ -2,7 +2,7 @@
 
 eval "EXPECTED=$1"
 eval "ACTUAL=$2"
-[ "$EXPECTED" == "$ACTUAL" ]
+[ "$EXPECTED" = "$ACTUAL" ]
 EXIT_CODE=$?
 
 if [ "$EXIT_CODE" -eq 0 ]; then
