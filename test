@@ -63,6 +63,8 @@ test_with_python() {
 		# Doing it once with the first python version is enough
 		DO_COVERAGE=0
 	fi
+
+	deactivate
 }
 
 main $*
