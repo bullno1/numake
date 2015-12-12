@@ -619,9 +619,9 @@ class Rule(object):
                 elif line.startswith("-include"):
                     # If this is an include directive
                     subrule_file_name = line[len("-include") + 1:]
-                    subrule_file_path = os.path.join(rule_dir, subrule_file_name)
-                    ctx.logger.trace(" Parsing include file: {0}", subrule_file_path)
-                    rules.extend(Rule.parse(ctx, Path(subrule_file_path)))
+                    subrule_file_path = Path(os.path.join(rule_dir, subrule_file_name))
+                    ctx.logger.trace(" Parsing include file: {0}", subrule_file_path.get_friendly(ctx))
+                    rules.extend(Rule.parse(ctx, subrule_file_path))
                 elif ":" in line:
                     # If this is a rule header line
                     if rule_pattern:
@@ -632,6 +632,7 @@ class Rule(object):
                             build_vars = build_vars,
                             extra_attrs = extra_attrs
                         )
+                        ctx.logger.trace(" Add rule: {0}", rule_pattern.get_friendly(ctx))
                         rules.append(rule)
 
                         rule_lines = []
@@ -678,6 +679,7 @@ class Rule(object):
                     build_vars = build_vars,
                     extra_attrs = extra_attrs
                 )
+                ctx.logger.trace(" Add rule: {0}", rule_pattern.get_friendly(ctx))
                 rules.append(rule)
 
             return rules

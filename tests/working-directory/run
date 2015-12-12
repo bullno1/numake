@@ -6,8 +6,12 @@
 EXPECTED_PWD=$(pwd) numake all
 EXPECTED_PWD=$(pwd)/subdir numake subdir/sub
 EXPECTED_PWD=$(pwd)/subdir numake tricky
+EXPECTED_PWD=$(pwd) numake here
+EXPECTED_PWD=$(pwd) numake subdir/hoho
 
 cd subdir
 EXPECTED_PWD=$(readlink -f ../) numake ../all
 EXPECTED_PWD=$(pwd) numake sub
 EXPECTED_PWD=$(pwd) numake ../tricky
+EXPECTED_PWD=$(readlink -f ../) numake ../here
+EXPECTED_PWD=$(readlink -f ../) numake hoho
