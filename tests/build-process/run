@@ -1,0 +1,56 @@
+#!/bin/sh -e
+
+echo a > d
+
+# Check build order
+rm -rf log
+assert VAR=old numake a
+
+assert '[ -f a ]'
+assert '[ -f b ]'
+assert '[ -f c ]'
+assert '[ -f double-d ]'
+assert 'diff log1 log'
+
+# No rebuild should happen
+rm -rf log
+assert VAR=old numake a
+
+assert '[ ! -f log ]'
+
+# Variable change will trigger a rebuild only for c
+rm -rf log
+assert VAR=new numake a
+
+assert 'diff log2 log'
+
+# No more rebuild
+rm -rf log
+assert VAR=new numake a
+
+assert '[ ! -f log ]'
+
+# No more rebuild (again)
+rm -rf log
+assert VAR=new numake a
+
+assert '[ ! -f log ]'
+
+# PATH is an implicit build var so everything will be rebuilt
+rm -rf log
+PATH=/opt/wat:$PATH assert VAR=new numake a
+
+assert 'diff log1 log'
+
+# No more rebuild
+rm -rf log
+PATH=/opt/wat:$PATH assert VAR=new numake a
+
+assert '[ ! -f log ]'
+
+# A change in source triggers a rebuild
+rm -rf log
+echo b > d
+PATH=/opt/wat:$PATH assert VAR=new numake a
+
+assert 'diff log1 log'

@@ -9,6 +9,8 @@ import sqlite3
 import re
 import json
 import hashlib
+import socket
+import pickle
 
 def main(*args):
     return dispatch_cmd(args[0], *args[1:])
@@ -27,21 +29,21 @@ class Commands(object):
             return dispatch_cmd(args[0][2:], *args[1:])
 
         files = args if len(args) >= 1 else ["all"]
-        context = Context()
-        for file in files:
-            context.numake(Path(file))
+        with Context() as context:
+            for file in files:
+                context.numake(Path(file))
 
     @staticmethod
     def rules(*args):
-        context = Context()
-        for rule in context.rules:
-            print(rule.pattern.get_friendly(context))
+        with Context() as context:
+            for rule in context.rules:
+                print(rule.pattern.get_friendly(context))
 
     @staticmethod
     def targets(*args):
-        context = Context()
-        for target in context.db.get_all_targets():
-            print(target.get_friendly(context))
+        with Context() as context:
+            for target in context.db.get_all_targets():
+                print(target.get_friendly(context))
 
     @staticmethod
     def init(*args):
@@ -51,21 +53,46 @@ class Context(object):
     def __init__(
             self,
             start_dir = None, root_dir = None, timestamp = None, parent = None,
-            indent = None
+            indent = "", env = os.environ.copy()
             ):
+
         self._db = None
         self._rules = None
         self._logger = None
-        self.start_dir = start_dir or os.environ.get("NUMAKE_START_DIR") or os.path.abspath(os.path.curdir)
-        self.root_dir = root_dir or os.environ.get("NUMAKE_ROOT") or Context._find_root(self.start_dir)
-        self.indent = indent or ""
-        timestamp = timestamp or os.environ.get("NUMAKE_TIMESTAMP")
+        self._rpc_sock = None
+        self.agent = None
+
+        agent_port = env.get("NUMAKE_AGENT_PORT", None)
+        if agent_port:
+            self._agent_port = int(agent_port)
+            self.env = self._query_agent("env")
+            self.env.update(env)
+        else:
+            self._agent_port = None
+            self.env = env
+
+        self.start_dir = start_dir or self.env.get("NUMAKE_START_DIR") or os.path.abspath(os.path.curdir)
+        self.root_dir = root_dir or self.env.get("NUMAKE_ROOT") or Context._find_root(self.start_dir)
+        self.indent = indent
+        timestamp = timestamp or self.env.get("NUMAKE_TIMESTAMP")
         self._timestamp = int(timestamp) if timestamp else None
-        parent = parent or os.environ.get("NUMAKE_PARENT")
+        parent = parent or self.env.get("NUMAKE_PARENT")
         if parent:
             self.parent = Path(parent)
         else:
             self.parent = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, stacktrace):
+        self.close()
+
+    def close(self):
+        if self.agent:
+            self._query_agent("stop")
+        if self.rpc_sock:
+            self.rpc_sock.close()
 
     def numake(self, file):
         self.logger.info("numake {0}", file.get_friendly(self))
@@ -97,9 +124,9 @@ class Context(object):
         # recognized as a source next time we rebuild.
         build_vars = {}
         for var in Rule.IMPLICIT_BUILD_VARS:
-            build_vars[var] = os.environ.get(var)
+            build_vars[var] = self.env.get(var)
         for var, default in rule.build_vars.items():
-            build_vars[var] = os.environ.get(var, default)
+            build_vars[var] = self.env.get(var, default)
         db = self.db
         db.reset_target(target, rule, build_vars)
 
@@ -111,11 +138,13 @@ class Context(object):
             "NUMAKE_START_DIR": self.start_dir,
             "NUMAKE_TIMESTAMP": str(self.timestamp),
             "NUMAKE_PARENT": target.absolute,
+            "NUMAKE_AGENT_PORT": str(self.agent_port),
             "m": match
         }
         env.update(build_vars)
 
         rm(target.absolute)
+
         self.logger.debug(" Begin subprocess")
         build_process = subprocess.Popen(
             ["sh", "-s", "-e", out], # $@ will point to output like in Makefile
@@ -210,6 +239,22 @@ class Context(object):
 
         return self._db
 
+    @property
+    def agent_port(self):
+        if not self._agent_port:
+            self.agent = Agent(self)
+            self.agent.start()
+            self._agent_port = self.agent.port
+
+        return self._agent_port
+
+    @property
+    def rpc_sock(self):
+        if not self._rpc_sock:
+            self._rpc_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+        return self._rpc_sock
+
     @staticmethod
     def _find_root(start_dir):
         search_dir = start_dir
@@ -264,7 +309,7 @@ class Context(object):
         old_build_vars = db.get_build_vars(target)
         for var, default in rule.build_vars.items():
             old_value = old_build_vars.get(var, None)
-            new_value = os.environ.get(var, default)
+            new_value = self.env.get(var, default)
             if new_value != old_value:
                 self.logger.debug(
                     " Target's build var \"{0}\" changed",
@@ -273,7 +318,7 @@ class Context(object):
                 return self.rebuild(target, rule, match)
         for var in Rule.IMPLICIT_BUILD_VARS:
             old_value = old_build_vars.get(var, None)
-            new_value = os.environ.get(var)
+            new_value = self.env.get(var)
             if new_value != old_value:
                 self.logger.debug(
                     " Target's build var \"{0}\" changed",
@@ -282,20 +327,26 @@ class Context(object):
                 return self.rebuild(target, rule, match)
 
         # Check all dependencies
-        self.logger.debug(" Begin check dependencies")
-        dep_context = self.create_child(target)
         need_rebuild = False
-        for dependency, checksum in db.get_dependencies(target):
-            # If a dependency is not present, rebuild
-            if not os.path.exists(dependency.absolute):
-                self.logger.debug(" {0} is not present", dependency.get_friendly(self))
-                need_rebuild = True
-                break
-            # If a dependency is changed, rebuild
-            if dep_context.numake(dependency) != checksum:
-                dep_context.logger.debug(" {0} changed", dependency.get_friendly(self))
-                need_rebuild = True
-                break
+        self.logger.debug(" Begin check dependencies")
+        with self.create_child(target) as dep_context:
+            for dependency, checksum in db.get_dependencies(target):
+                # If a dependency is not present, rebuild
+                if not os.path.exists(dependency.absolute):
+                    dep_context.logger.debug(
+                        " {0} is not present",
+                        dependency.get_friendly(self)
+                    )
+                    need_rebuild = True
+                    break
+                # If a dependency is changed, rebuild
+                if dep_context.numake(dependency) != checksum:
+                    dep_context.logger.debug(
+                        " {0} changed",
+                        dependency.get_friendly(self)
+                    )
+                    need_rebuild = True
+                    break
         self.logger.debug(" End check dependencies")
 
         if need_rebuild:
@@ -303,6 +354,10 @@ class Context(object):
         else:
             db.set_visited(target)
             return db.get_checksum(target)
+
+    def _query_agent(self, cmd):
+        self.rpc_sock.sendto(cmd.encode("utf-8"), ("127.0.0.1", self.agent_port))
+        return pickle.loads(self.rpc_sock.recv(4096))
 
 class Db(object):
     def __init__(self, context):
@@ -715,6 +770,34 @@ class WriteThread(Thread):
     def run(self):
         self.pipe.write(self.rule.body.encode("utf-8"))
         self.pipe.close()
+
+class Agent(Thread):
+    NONE = pickle.dumps(None)
+
+    def __init__(self, context):
+        Thread.__init__(self)
+        self.env = pickle.dumps(context.env)
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.sock.bind(("127.0.0.1", 0))
+        addr, port = self.sock.getsockname()
+        self.port = port
+
+    def run(self):
+        self.running = True
+        while self.running:
+            cmd, addr = self.sock.recvfrom(4096)
+            method = getattr(self, "_cmd_" + cmd.decode("utf-8"), None)
+            if method:
+                self.sock.sendto(method(), addr)
+            else:
+                print("not handled")
+
+    def _cmd_env(self):
+        return self.env
+
+    def _cmd_stop(self):
+        self.running = False
+        return Agent.NONE
 
 class Logger(object):
     def __init__(self, indent, level):
