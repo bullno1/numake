@@ -1,3 +1,5 @@
-all: sub/sub ! live
+all: subdir/subtarget ! live
 
--include sub
+fail: subtarget ! live
+
+-include subdir
