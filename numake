@@ -34,11 +34,22 @@ class Commands(object):
                 context.numake(Path(file))
 
     @staticmethod
-    def depend(parent, *args):
-        parent = Path(parent)
+    def depend(target, *args):
+        target = Path(target)
         with Context.create() as context:
             for file in args:
-                context.db.register_dependency(parent, Path(file))
+                context.db.register_dependency(
+                    target, Path(file), DependencyType.REGULAR
+                )
+
+    @staticmethod
+    def before(target, *args):
+        target = Path(target)
+        with Context.create() as context:
+            for file in args:
+                context.db.register_dependency(
+                    target, Path(file), DependencyType.ORDER_ONLY
+                )
 
     @staticmethod
     def rules(*args):
@@ -104,8 +115,8 @@ class Context(object):
     def close(self):
         if self.agent:
             self._query_agent("stop")
-        if self.rpc_sock:
-            self.rpc_sock.close()
+        if self._rpc_sock:
+            self._rpc_sock.close()
 
     def numake(self, file):
         self.logger.info("numake {0}", file.get_friendly(self))
@@ -154,8 +165,16 @@ class Context(object):
         rm(target.absolute)
 
         self.logger.debug(" Begin subprocess")
+        # -s: Read commands from stdin
+        # -e: Stop execution on first error
+        # -x: Trace commands
+        # Passing in "out" will make $@ point to output like in Makefile
+        if self.logger.level == LogLevel.TRACE:
+            cmd = ["sh", "-s", "-x", "-e", out]
+        else:
+            cmd = ["sh", "-s", "-e", out]
         build_process = subprocess.Popen(
-            ["sh", "-s", "-e", out], # $@ will point to output like in Makefile
+            cmd,
             stdin = subprocess.PIPE,
             stdout = subprocess.PIPE,
             stderr = subprocess.STDOUT,
@@ -174,7 +193,7 @@ class Context(object):
         build_process.wait()
         self.logger.debug(" End subprocess")
 
-        if build_process.wait() == 0:
+        if build_process.returncode == 0:
             if rule.is_live:
                 self.logger.debug(" End rebuild {0}", target.get_friendly(self))
                 return "" # No point in hashing or tracking live target
@@ -363,7 +382,7 @@ class Context(object):
         need_rebuild = False
         self.logger.debug(" Begin check dependencies")
         with self.create_child(target) as dep_context:
-            for dependency, checksum in db.get_dependencies(target):
+            for dependency, dep_type, checksum in db.get_dependencies(target):
                 # If a dependency is not present, rebuild
                 if not os.path.exists(dependency.absolute):
                     dep_context.logger.debug(
@@ -372,8 +391,9 @@ class Context(object):
                     )
                     need_rebuild = True
                     break
-                # If a dependency is changed, rebuild
-                if dep_context.numake(dependency) != checksum:
+                # If a regular dependency is changed, rebuild
+                dep_changed = dep_context.numake(dependency) != checksum
+                if dep_changed and dep_type == DependencyType.REGULAR:
                     dep_context.logger.debug(
                         " {0} changed",
                         dependency.get_friendly(self)
@@ -431,6 +451,7 @@ class Db(object):
                 CREATE TABLE IF NOT EXISTS dependency(
                     src TEXT REFERENCES file(name) ON DELETE CASCADE,
                     dst TEXT REFERENCES file(name) ON DELETE CASCADE,
+                    type INTEGER,
                     checksum TEXT,
                     PRIMARY KEY(src, dst)
                 ) WITHOUT ROWID;
@@ -598,20 +619,22 @@ class Db(object):
 
         with self.conn:
             cursor = self.conn.execute(
-                "SELECT dst, checksum FROM dependency WHERE src = ?",
+                "SELECT dst, type, checksum FROM dependency WHERE src = ?",
                 (target.get_canonical(self.ctx),)
             )
             for row in cursor:
                 dep_path = Path(os.path.join(self.ctx.root_dir, row[0]))
-                dependencies.append((dep_path, row[1]))
+                dependencies.append((dep_path, row[1], row[2]))
 
         return dependencies
 
-    def register_dependency(self, src, dst):
+    def register_dependency(self, src, dst, dependency_type):
         with self.conn:
             self.conn.execute(
-                "INSERT OR IGNORE INTO dependency(src, dst) VALUES(?, ?)",
-                (src.get_canonical(self.ctx), dst.get_canonical(self.ctx))
+                "INSERT OR IGNORE INTO dependency(src, dst, type) VALUES(?, ?, ?)",
+                (src.get_canonical(self.ctx),
+                 dst.get_canonical(self.ctx),
+                 dependency_type)
             )
 
     def get_all_targets(self):
@@ -735,10 +758,16 @@ class Rule(object):
                             rhs_type = RuleRhsType.BUILD_VARS
                         elif token == "!":
                             rhs_type = RuleRhsType.EXTRA_ATTRS
+                        elif token == "|":
+                            rhs_type = RuleRhsType.ORDER_ONLY_DEPENDENCY
                         else:
                             if rhs_type == RuleRhsType.DEPENDENCY:
                                 dependency = token.replace("%", "$m")
-                                dep_line = "\"$NUMAKE\" \"{0}\"; \"$NUMAKE\" --depend \"$@\" \"{0}\"".format(dependency)
+                                dep_line = "\"$NUMAKE\" \"{0}\"; \"$NUMAKE\" --depend \"$@\" {0}".format(dependency)
+                                rule_lines.append(dep_line)
+                            elif rhs_type == RuleRhsType.ORDER_ONLY_DEPENDENCY:
+                                dependency = token.replace("%", "$m")
+                                dep_line = "\"$NUMAKE\" \"{0}\"; \"$NUMAKE\" --before \"$@\" {0}".format(dependency)
                                 rule_lines.append(dep_line)
                             elif rhs_type == RuleRhsType.BUILD_VARS:
                                 build_vars[token] = default_vars.get(token, "")
@@ -818,23 +847,23 @@ class Agent(Thread):
 
     def run(self):
         self.running = True
-        self.logger.debug("(agent@{0}) Started", self.port)
+        self.logger.debug(" (agent@{0}) Started", self.port)
         while self.running:
             cmd, addr = self.sock.recvfrom(65535)
             cmd = pickle.loads(cmd)
             method = getattr(self, "_cmd_" + cmd[0], None)
             if method:
                 self.logger.debug(
-                    "(agent@{0}) Received command {1} from {2}",
+                    " (agent@{0}) Received command {1} from {2}",
                     self.port, cmd, addr
                 )
                 self.sock.sendto(method(*cmd[1:]), addr)
             else:
                 self.logger.warning(
-                    "(agent@{0}) Received invalid command {1} from {2}",
+                    " (agent@{0}) Received invalid command {1} from {2}",
                     self.port, cmd, addr
                 )
-        self.logger.debug("(agent@{0}) Stopped", self.port)
+        self.logger.debug(" (agent@{0}) Stopped", self.port)
 
     def _cmd_env(self):
         return self.env
@@ -890,8 +919,13 @@ class FileTypes(object):
 
 class RuleRhsType(object):
     DEPENDENCY = 0
-    BUILD_VARS = 1
-    EXTRA_ATTRS = 2
+    ORDER_ONLY_DEPENDENCY = 1
+    BUILD_VARS = 2
+    EXTRA_ATTRS = 3
+
+class DependencyType(object):
+    REGULAR = 0
+    ORDER_ONLY = 1
 
 def fail(msg, *args):
     raise Exception(msg.format(*args))

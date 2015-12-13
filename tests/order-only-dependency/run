@@ -1,0 +1,21 @@
+#!/bin/sh -e
+
+assert numake
+
+assert '[ -f rebuilt-all ]'
+assert '[ -f rebuilt-order-only-dep ]'
+
+# An order-only dependency must be kept up-to-date but does not trigger a rebuild
+rm -rf rebuilt-*
+echo new > dep
+assert numake
+
+assert '[ ! -f rebuilt-all ]'
+assert '[ -f rebuilt-order-only-dep ]'
+
+rm -rf rebuilt-*
+echo new > dep
+assert numake
+
+assert '[ ! -f rebuilt-all ]'
+assert '[ ! -f rebuilt-order-only-dep ]'
