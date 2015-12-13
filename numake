@@ -272,7 +272,9 @@ class Context(object):
                 self._rules = self.parent.rules
             elif self.is_root:
                 rule_path = Path(os.path.join(self.root_dir, "rules.nmk"))
-                self._rules = Rule.parse(self, rule_path)
+                self._rules = Rule.parse(
+                    self, rule_path, os.path.dirname(rule_path.absolute)
+                )
             else:
                 self._rules = self._query_agent("rules")
         return self._rules
@@ -693,7 +695,7 @@ class Rule(object):
         self.extra_attrs = extra_attrs
 
     @staticmethod
-    def parse(ctx, path):
+    def parse(ctx, path, working_directory):
         friendly_path = path.get_friendly(ctx)
         ctx.logger.debug(" Parsing rule file: {0}", friendly_path)
         rule_dir = os.path.dirname(path.absolute)
@@ -718,25 +720,49 @@ class Rule(object):
                     continue
 
                 if line[0].isspace():
-                    # If this is a rule line
+                    # This is a rule line
                     if rule_pattern:
                         rule_lines.append(line)
                     else:
                         return fail(
-                            "Syntax error, unexpected recipe line in {0}, line {1}",
+                            "Syntax error: Unexpected recipe line in {0}, line {1}",
                             friendly_path, line_no
                         )
                 elif line.startswith("-include"):
-                    # If this is an include directive
+                    # This is an include directive
                     subrule_file_name = line[len("-include") + 1:]
-                    subrule_file_path = Path(os.path.join(rule_dir, subrule_file_name))
-                    ctx.logger.trace(" Parsing include file: {0}", subrule_file_path.get_friendly(ctx))
-                    rules.extend(Rule.parse(ctx, subrule_file_path))
+                    subrule_file_path = Path(
+                        os.path.join(rule_dir, subrule_file_name)
+                    )
+                    ctx.logger.trace(
+                        " Parsing include file: {0}",
+                        subrule_file_path.get_friendly(ctx)
+                    )
+                    rules.extend(
+                        Rule.parse(
+                            ctx,
+                            subrule_file_path,
+                            os.path.dirname(subrule_file_path.absolute)
+                        )
+                    )
+                elif line.startswith("-import"):
+                    # This is an import directive
+                    imported_file_name = line[len("-import") + 1:]
+                    imported_file_path = Path(
+                        os.path.join(rule_dir, imported_file_name)
+                    )
+                    ctx.logger.trace(
+                        " Parsing import file: {0}",
+                        imported_file_path.get_friendly(ctx)
+                    )
+                    rules.extend(
+                        Rule.parse(ctx, imported_file_path, working_directory)
+                    )
                 elif ":" in line:
-                    # If this is a rule header line
+                    # This is a rule header line
                     if rule_pattern:
                         rule = Rule(
-                            working_directory = os.path.dirname(path.absolute),
+                            working_directory = working_directory,
                             pattern = rule_pattern,
                             body = "\n".join(rule_lines),
                             build_vars = build_vars,
@@ -750,7 +776,7 @@ class Rule(object):
                         extra_attrs = []
 
                     tokens = line.split(":", 1)
-                    rule_pattern = Path(os.path.join(rule_dir, tokens[0]))
+                    rule_pattern = Path(os.path.join(working_directory, tokens[0]))
 
                     rhs_type = RuleRhsType.DEPENDENCY
                     for token in filter(None, tokens[1].split(" ")):
@@ -779,17 +805,22 @@ class Rule(object):
                                     )
                                 extra_attrs.append(token)
                 elif "=" in line:
-                    # If this is a var line
+                    # This is a var line
                     var_tokens = line.split("=", 1)
                     var_name = var_tokens[0].rstrip(" ")
                     var_value = subprocess.check_output(
                         ["echo", var_tokens[1].lstrip(" ")]
                     ).decode("utf-8").rstrip("\r\n")
                     default_vars[var_name] = var_value
+                else:
+                    return fail(
+                        "Syntax error in {0}, line {2}",
+                        friendly_path, line_no
+                    )
 
             if rule_pattern:
                 rule = Rule(
-                    working_directory = os.path.dirname(path.absolute),
+                    working_directory = working_directory,
                     pattern = rule_pattern,
                     body = "\n".join(rule_lines),
                     build_vars = build_vars,
@@ -853,7 +884,7 @@ class Agent(Thread):
             cmd = pickle.loads(cmd)
             method = getattr(self, "_cmd_" + cmd[0], None)
             if method:
-                self.logger.debug(
+                self.logger.trace(
                     " (agent@{0}) Received command {1} from {2}",
                     self.port, cmd, addr
                 )
