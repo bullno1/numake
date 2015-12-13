@@ -755,6 +755,10 @@ class Rule(object):
                     imported_file_path = Path(
                         os.path.join(rule_dir, imported_file_name)
                     )
+                    if os.path.isdir(imported_file_path.absolute):
+                        imported_file_path = Path(
+                            os.path.join(imported_file_path.absolute, "rules.nmk")
+                        )
                     ctx.logger.trace(
                         " Parsing import file: {0}",
                         imported_file_path.get_friendly(ctx)

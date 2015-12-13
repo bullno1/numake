@@ -1,4 +1,4 @@
-all: subdir/subtarget ! live
+pass: subdir/subtarget ! live
 
 fail: subtarget ! live
 
