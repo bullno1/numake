@@ -1,0 +1,7 @@
+#!/bin/sh -e
+
+numake
+
+assert '[ -f all ]'
+assert '[ -f prefix-target-suffix ]'
+assert '[ -f target ]'

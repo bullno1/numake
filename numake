@@ -761,7 +761,7 @@ class Rule(object):
         with open(path.absolute) as rule_file:
             for line in rule_file:
                 line_no = line_no + 1
-                line = line.rstrip("\r\n").split("#", 1)[0]
+                line = line.rstrip("\r\n").split(" #", 1)[0]
 
                 if len(line) == 0:
                     continue
@@ -775,6 +775,9 @@ class Rule(object):
                             "Syntax error: Unexpected recipe line in {0}, line {1}",
                             friendly_path, line_no
                         )
+                elif line.startswith("#"):
+                    # This is a comment
+                    continue
                 elif line.startswith("-include"):
                     # This is an include directive
                     subrule_file_name = line[len("-include") + 1:]
