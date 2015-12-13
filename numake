@@ -144,8 +144,6 @@ class Context(object):
         out = os.path.relpath(target.absolute, rule.working_directory)
         env = {
             "NUMAKE": os.path.realpath(sys.argv[0]),
-            "NUMAKE_ROOT": self.root_dir,
-            "NUMAKE_START_DIR": self.start_dir,
             "NUMAKE_TIMESTAMP": str(self.timestamp),
             "NUMAKE_AGENT_PORT": str(self.agent_port),
             "m": match
