@@ -18,6 +18,12 @@ assert VAR=old numake a
 
 assert '[ ! -f log ]'
 
+# No rebuild should happen
+rm -rf log
+assert VAR=old numake a
+
+assert '[ ! -f log ]'
+
 # Variable change will trigger a rebuild only for c
 rm -rf log
 assert VAR=new numake a
@@ -48,9 +54,46 @@ PATH=/opt/wat:$PATH assert VAR=new numake a
 
 assert '[ ! -f log ]'
 
+# No more rebuild
+rm -rf log
+PATH=/opt/wat:$PATH assert VAR=new numake a
+
+assert '[ ! -f log ]'
+
 # A change in source triggers a rebuild
 rm -rf log
 echo b > d
 PATH=/opt/wat:$PATH assert VAR=new numake a
 
 assert 'diff log1 log'
+
+# No more rebuild
+rm -rf log
+PATH=/opt/wat:$PATH assert VAR=new numake a
+
+assert '[ ! -f log ]'
+
+# No more rebuild
+rm -rf log
+PATH=/opt/wat:$PATH assert VAR=new numake a
+
+assert '[ ! -f log ]'
+
+# Another change in source triggers a rebuild
+rm -rf log
+echo c > d
+PATH=/opt/wat:$PATH assert VAR=new numake a
+
+assert 'diff log1 log'
+
+# No more rebuild
+rm -rf log
+PATH=/opt/wat:$PATH assert VAR=new numake a
+
+assert '[ ! -f log ]'
+
+# No more rebuild
+rm -rf log
+PATH=/opt/wat:$PATH assert VAR=new numake a
+
+assert '[ ! -f log ]'
