@@ -26,30 +26,14 @@ class Commands(object):
     @staticmethod
     def numake(*args):
         if len(args) >= 1 and args[0][:2] == "--":
-            return dispatch_cmd(args[0][2:], *args[1:])
+            return dispatch_cmd(args[0][2:].replace("-", "_"), *args[1:])
 
         files = args if len(args) >= 1 else ["all"]
-        with Context.create() as context:
-            for file in files:
-                context.numake(Path(file))
+        Commands.__build(DependencyType.REGULAR, files)
 
     @staticmethod
-    def depend(target, *args):
-        target = Path(target)
-        with Context.create() as context:
-            for file in args:
-                context.db.register_dependency(
-                    target, Path(file), DependencyType.REGULAR
-                )
-
-    @staticmethod
-    def before(target, *args):
-        target = Path(target)
-        with Context.create() as context:
-            for file in args:
-                context.db.register_dependency(
-                    target, Path(file), DependencyType.ORDER_ONLY
-                )
+    def order_only(*args):
+        Commands.__build(DependencyType.ORDER_ONLY, args)
 
     @staticmethod
     def rules(*args):
@@ -93,6 +77,21 @@ class Commands(object):
     @staticmethod
     def init(*args):
         ensure_dir(os.path.join(os.path.abspath(os.path.curdir), ".numake"))
+
+    @staticmethod
+    def __build(dependency_type, targets):
+        targets = [Path(target) for target in targets]
+
+        with Context.create() as context:
+            for target in targets:
+                context.numake(target)
+
+            parent = os.environ.get("NUMAKE_TARGET", None)
+            parent = Path(parent) if parent else None
+            if parent:
+                context.db.register_dependencies(
+                    parent, targets, dependency_type
+                )
 
 class Context(object):
     @staticmethod
@@ -185,6 +184,7 @@ class Context(object):
             "NUMAKE": os.path.realpath(sys.argv[0]),
             "NUMAKE_TIMESTAMP": str(self.timestamp),
             "NUMAKE_AGENT_PORT": str(self.agent_port),
+            "NUMAKE_TARGET": target.absolute,
             "m": match
         }
         env.update(build_vars)
@@ -657,13 +657,19 @@ class Db(object):
 
         return dependencies
 
-    def register_dependency(self, src, dst, dependency_type):
+    def register_dependencies(self, source, destinations, dependency_type):
+        canonical_src = source.get_canonical(self.ctx)
+        dependencies = [
+            (canonical_src, dst.get_canonical(self.ctx), dependency_type)
+            for dst in destinations
+        ]
         with self.conn:
-            self.conn.execute(
-                "INSERT OR IGNORE INTO dependency(src, dst, type) VALUES(?, ?, ?)",
-                (src.get_canonical(self.ctx),
-                 dst.get_canonical(self.ctx),
-                 dependency_type)
+            self.conn.executemany(
+                """
+                INSERT OR IGNORE INTO dependency(src, dst, type)
+                VALUES(?, ?, ?)
+                """,
+                dependencies
             )
 
     def get_all_targets(self):
@@ -838,11 +844,11 @@ class Rule(object):
                         else:
                             if rhs_type == RuleRhsType.DEPENDENCY:
                                 dependency = token.replace("%", "$m")
-                                dep_line = "\"$NUMAKE\" \"{0}\"; \"$NUMAKE\" --depend \"$@\" {0}".format(dependency)
+                                dep_line = "\"$NUMAKE\" {0}".format(dependency)
                                 rule_lines.append(dep_line)
                             elif rhs_type == RuleRhsType.ORDER_ONLY_DEPENDENCY:
                                 dependency = token.replace("%", "$m")
-                                dep_line = "\"$NUMAKE\" \"{0}\"; \"$NUMAKE\" --before \"$@\" {0}".format(dependency)
+                                dep_line = "\"$NUMAKE\" --order-only {0}".format(dependency)
                                 rule_lines.append(dep_line)
                             elif rhs_type == RuleRhsType.BUILD_VARS:
                                 build_vars[token] = default_vars.get(token, "")
