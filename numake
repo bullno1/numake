@@ -66,6 +66,7 @@ class Context(object):
         ctx._logger = None
         ctx._rpc_sock = None
         ctx.agent = None
+        ctx.parent = None
 
         agent_port = env.get("NUMAKE_AGENT_PORT", None)
         if agent_port:
@@ -219,6 +220,7 @@ class Context(object):
     def create_child(self, target):
         child = Context()
 
+        child.parent = self
         child.agent = None
         child._rpc_sock = None
         child._db = self._db
@@ -237,14 +239,19 @@ class Context(object):
     @property
     def timestamp(self):
         if not self._timestamp:
-            self._timestamp = self.db.inc_timestamp()
+            if self.parent:
+                self._timestamp = self.parent.timestamp
+            else:
+                self._timestamp = self.db.inc_timestamp()
 
         return self._timestamp
 
     @property
     def rules(self):
         if not self._rules:
-            if self.is_root:
+            if self.parent:
+                self._rules = self.parent.rules
+            elif self.is_root:
                 rule_path = Path(os.path.join(self.root_dir, "rules.nmk"))
                 self._rules = Rule.parse(self, rule_path)
             else:
@@ -265,9 +272,12 @@ class Context(object):
     @property
     def agent_port(self):
         if not self._agent_port:
-            self.agent = Agent(self)
-            self.agent.start()
-            self._agent_port = self.agent.port
+            if self.parent:
+                self._agent_port = self.parent.agent_port
+            else:
+                self.agent = Agent(self)
+                self.agent.start()
+                self._agent_port = self.agent.port
 
         return self._agent_port
 
@@ -824,6 +834,7 @@ class Agent(Thread):
                     "(agent@{0}) Received invalid command {1} from {2}",
                     self.port, cmd, addr
                 )
+        self.logger.debug("(agent@{0}) Stopped", self.port)
 
     def _cmd_env(self):
         return self.env
