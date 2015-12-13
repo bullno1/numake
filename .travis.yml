@@ -7,5 +7,7 @@ python:
   - "3.5"
   - "pypy"
 script: ./test-with-current-python
+env:
+  - NUMAKE_LOG_LEVEL=TRACE
 sudo: required
 dist: trusty
