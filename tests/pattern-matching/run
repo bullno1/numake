@@ -1,0 +1,11 @@
+#!/bin/sh -e
+
+numake
+
+assert-equal 'generic,match=gen' '`cat gen.out`'
+assert-equal 'specific,match=' '`cat specific.out`'
+assert-equal 'generic,match=subdir/gen' '`cat subdir/gen.out`'
+assert-equal \
+	'match=match-str-that-is-so-loooooooooooooooooooong,subdir-generic' \
+	'`cat subdir/partial-match-str-that-is-so-loooooooooooooooooooong.out`'
+assert-equal 'match=,subdir-specific' '`cat subdir/specific.out`'

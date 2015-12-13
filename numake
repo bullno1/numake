@@ -201,10 +201,23 @@ class Context(object):
             )
 
     def find_rule(self, target):
+        # Find all matching rules
+        candidates = []
         for rule in self.rules:
             match_result = rule.match(target)
             if match_result is not None:
-                return (rule, match_result)
+                candidates.append((rule, match_result))
+
+        # Pick the most specific (shortest match)
+        best_match = None
+        shortest_match_length = sys.maxsize
+        for rule, match in candidates:
+            match_length = len(match)
+            if match_length < shortest_match_length:
+                best_match = (rule, match)
+                shortest_match_length = match_length
+
+        return best_match
 
     def create_child(self, target):
         child = Context()
