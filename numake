@@ -69,6 +69,28 @@ class Commands(object):
             print("}")
 
     @staticmethod
+    def gc(*args):
+        with Context.create() as context:
+            nodes, edges = context.db.get_build_graph()
+
+            garbage_nodes = []
+            for node_name, node_type in nodes:
+                if node_type == FileTypes.SOURCE:
+                    if not os.path.exists(node_name):
+                        context.logger.info(
+                            "Removing non-existent source file: {0}",
+                            Path(node_name).get_friendly(context)
+                        )
+                        garbage_nodes.append(node_name)
+                elif not context.find_rule(Path(node_name)):
+                    context.logger.info(
+                        "Removing target with no rules: {0}",
+                        Path(node_name).get_friendly(context)
+                    )
+                    garbage_nodes.append(node_name)
+            context.db.delete_nodes(garbage_nodes)
+
+    @staticmethod
     def targets(*args):
         with Context.create() as context:
             for target in context.db.get_all_targets():
@@ -697,6 +719,13 @@ class Db(object):
                 )
             ]
             return (nodes, edges)
+
+    def delete_nodes(self, nodes):
+        with self.conn:
+            self.conn.executemany(
+                "DELETE FROM file WHERE name = ?",
+                [(node,) for node in nodes]
+            )
 
     def _get_file_attr(self, file, attr):
         query = "SELECT {0} FROM file WHERE name = ?".format(attr)
