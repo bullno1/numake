@@ -22,6 +22,8 @@ if [ -z "$TESTS" ]; then
 fi
 
 EXIT_CODE=0
+NUMAKE_LOG_LEVEL=${NUMAKE_LOG_LEVEL:-DEBUG}
+export NUMAKE_LOG_LEVEL
 for testcase in $TESTS
 do
 	pushd "$TEST_DIR/$testcase" > /dev/null
