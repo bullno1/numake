@@ -73,12 +73,15 @@ class Context(object):
             start_dir = start_dir or os.path.abspath(os.path.curdir)
             ctx.env.update({
                 "NUMAKE_START_DIR": start_dir,
-                "NUMAKE_ROOT": root_dir or Context._find_root(start_dir)
+                "NUMAKE_ROOT": root_dir or Context._find_root(start_dir),
+                "NUMAKE_LOG_LEVEL": ctx.env.get("NUMAKE_LOG_LEVEL", "INFO")
             })
 
         ctx.start_dir = ctx.env.get("NUMAKE_START_DIR")
         ctx.root_dir = ctx.env.get("NUMAKE_ROOT")
         ctx.indent = ""
+        log_level = ctx.env.get("NUMAKE_LOG_LEVEL")
+        ctx.logger = Logger(indent = ctx.indent, level = LogLevel.parse(log_level))
         timestamp = ctx.env.get("NUMAKE_TIMESTAMP", None)
         ctx._timestamp = int(timestamp) if timestamp else None
         parent = ctx.env.get("NUMAKE_PARENT", None)
@@ -208,7 +211,6 @@ class Context(object):
 
         child.agent = None
         child._rpc_sock = None
-        child._logger = None
         child._db = self._db
         child._rules = self._rules
         child.is_root = self.is_root
@@ -219,15 +221,9 @@ class Context(object):
         child.indent = self.indent + "  "
         child._timestamp = self._timestamp
         child.parent = target
+        child.logger = Logger(indent = child.indent, level = self.logger.level)
 
         return child
-
-    @property
-    def logger(self):
-        if not self._logger:
-            self._logger = Logger(indent = self.indent, level = LogLevel.DEBUG)
-
-        return self._logger
 
     @property
     def timestamp(self):
@@ -866,6 +862,10 @@ class LogLevel(object):
     INFO = 3
     DEBUG = 4
     TRACE = 5
+
+    @staticmethod
+    def parse(level):
+        return getattr(LogLevel, level) if hasattr(LogLevel, level) else int(level)
 
 class FileTypes(object):
     SOURCE = "s"
