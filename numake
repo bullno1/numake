@@ -415,7 +415,7 @@ class Context(object):
                 # If a dependency is not present, rebuild
                 if not os.path.exists(dependency.absolute):
                     dep_context.logger.debug(
-                        " {0} is not present",
+                        "{0} is not present",
                         dependency.get_friendly(self)
                     )
                     need_rebuild = True
@@ -424,7 +424,7 @@ class Context(object):
                 dep_changed = dep_context.numake(dependency) != checksum
                 if dep_changed and dep_type == DependencyType.REGULAR:
                     dep_context.logger.debug(
-                        " {0} changed",
+                        "{0} changed",
                         dependency.get_friendly(self)
                     )
                     need_rebuild = True
@@ -869,7 +869,7 @@ class Rule(object):
                     default_vars[var_name] = var_value
                 else:
                     return fail(
-                        "Syntax error in {0}, line {2}",
+                        "Syntax error in {0}, line {1}",
                         friendly_path, line_no
                     )
 
