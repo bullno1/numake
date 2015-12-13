@@ -50,6 +50,7 @@ class Commands(object):
         ensure_dir(os.path.join(os.path.abspath(os.path.curdir), ".numake"))
 
 class Context(object):
+    @staticmethod
     def create(start_dir = None, root_dir = None, env = os.environ):
         ctx = Context()
 
@@ -224,7 +225,7 @@ class Context(object):
     @property
     def logger(self):
         if not self._logger:
-            self._logger = Logger(indent = self.indent, level = LogLevel.INFO)
+            self._logger = Logger(indent = self.indent, level = LogLevel.DEBUG)
 
         return self._logger
 
