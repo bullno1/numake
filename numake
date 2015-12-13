@@ -357,7 +357,7 @@ class Context(object):
 
     def _query_agent(self, cmd):
         self.rpc_sock.sendto(cmd.encode("utf-8"), ("127.0.0.1", self.agent_port))
-        return pickle.loads(self.rpc_sock.recv(4096))
+        return pickle.loads(self.rpc_sock.recv(65535))
 
 class Db(object):
     def __init__(self, context):
@@ -785,7 +785,7 @@ class Agent(Thread):
     def run(self):
         self.running = True
         while self.running:
-            cmd, addr = self.sock.recvfrom(4096)
+            cmd, addr = self.sock.recvfrom(65535)
             method = getattr(self, "_cmd_" + cmd.decode("utf-8"), None)
             if method:
                 self.sock.sendto(method(), addr)
