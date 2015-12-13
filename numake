@@ -29,19 +29,19 @@ class Commands(object):
             return dispatch_cmd(args[0][2:], *args[1:])
 
         files = args if len(args) >= 1 else ["all"]
-        with Context() as context:
+        with Context.create() as context:
             for file in files:
                 context.numake(Path(file))
 
     @staticmethod
     def rules(*args):
-        with Context() as context:
+        with Context.create() as context:
             for rule in context.rules:
                 print(rule.pattern.get_friendly(context))
 
     @staticmethod
     def targets(*args):
-        with Context() as context:
+        with Context.create() as context:
             for target in context.db.get_all_targets():
                 print(target.get_friendly(context))
 
@@ -50,39 +50,43 @@ class Commands(object):
         ensure_dir(os.path.join(os.path.abspath(os.path.curdir), ".numake"))
 
 class Context(object):
-    def __init__(
-            self,
-            start_dir = None, root_dir = None, timestamp = None, parent = None,
-            indent = "", env = os.environ.copy()
-            ):
+    def create(start_dir = None, root_dir = None, env = os.environ):
+        ctx = Context()
 
-        self._db = None
-        self._rules = None
-        self._logger = None
-        self._rpc_sock = None
-        self.agent = None
+        ctx._db = None
+        ctx._rules = None
+        ctx._logger = None
+        ctx._rpc_sock = None
+        ctx.agent = None
 
         agent_port = env.get("NUMAKE_AGENT_PORT", None)
         if agent_port:
-            self.is_root = False
-            self._agent_port = int(agent_port)
-            self.env = self._query_agent("env")
-            self.env.update(env)
+            ctx.is_root = False
+            ctx._agent_port = int(agent_port)
+            ctx.env = ctx._query_agent("env")
+            ctx.env.update(env)
         else:
-            self._agent_port = None
-            self.is_root = True
-            self.env = env
+            ctx.is_root = True
+            ctx._agent_port = None
+            ctx.env = env.copy()
+            start_dir = start_dir or os.path.abspath(os.path.curdir)
+            ctx.env.update({
+                "NUMAKE_START_DIR": start_dir,
+                "NUMAKE_ROOT": root_dir or Context._find_root(start_dir)
+            })
 
-        self.start_dir = start_dir or self.env.get("NUMAKE_START_DIR") or os.path.abspath(os.path.curdir)
-        self.root_dir = root_dir or self.env.get("NUMAKE_ROOT") or Context._find_root(self.start_dir)
-        self.indent = indent
-        timestamp = timestamp or self.env.get("NUMAKE_TIMESTAMP")
-        self._timestamp = int(timestamp) if timestamp else None
-        parent = parent or self.env.get("NUMAKE_PARENT")
+        ctx.start_dir = ctx.env.get("NUMAKE_START_DIR")
+        ctx.root_dir = ctx.env.get("NUMAKE_ROOT")
+        ctx.indent = ""
+        timestamp = ctx.env.get("NUMAKE_TIMESTAMP", None)
+        ctx._timestamp = int(timestamp) if timestamp else None
+        parent = ctx.env.get("NUMAKE_PARENT", None)
         if parent:
-            self.parent = Path(parent)
+            ctx.parent = Path(parent)
         else:
-            self.parent = None
+            ctx.parent = None
+
+        return ctx
 
     def __enter__(self):
         return self
@@ -199,16 +203,22 @@ class Context(object):
                 return (rule, match_result)
 
     def create_child(self, target):
-        child = Context(
-            start_dir = self.start_dir,
-            root_dir = self.root_dir,
-            timestamp = self._timestamp,
-            parent = target.absolute,
-            indent = self.indent + "  ",
-            env = self.env
-        )
+        child = Context()
+
+        child.agent = None
+        child._rpc_sock = None
+        child._logger = None
         child._db = self._db
         child._rules = self._rules
+        child.is_root = self.is_root
+        child._agent_port = self._agent_port
+        child.env = self.env
+        child.start_dir = self.start_dir
+        child.root_dir = self.root_dir
+        child.indent = self.indent + "  "
+        child._timestamp = self._timestamp
+        child.parent = target
+
         return child
 
     @property
