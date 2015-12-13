@@ -1,0 +1,3 @@
+all: sub/sub ! live
+
+-include sub

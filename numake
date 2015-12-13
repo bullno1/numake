@@ -734,6 +734,10 @@ class Rule(object):
                     subrule_file_path = Path(
                         os.path.join(rule_dir, subrule_file_name)
                     )
+                    if os.path.isdir(subrule_file_path.absolute):
+                        subrule_file_path = Path(
+                            os.path.join(subrule_file_path.absolute, "rules.nmk")
+                        )
                     ctx.logger.trace(
                         " Parsing include file: {0}",
                         subrule_file_path.get_friendly(ctx)
