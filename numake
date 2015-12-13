@@ -34,6 +34,13 @@ class Commands(object):
                 context.numake(Path(file))
 
     @staticmethod
+    def depend(parent, *args):
+        parent = Path(parent)
+        with Context.create() as context:
+            for file in args:
+                context.db.register_dependency(parent, Path(file))
+
+    @staticmethod
     def rules(*args):
         with Context.create() as context:
             for rule in context.rules:
@@ -84,11 +91,6 @@ class Context(object):
         ctx.logger = Logger(indent = ctx.indent, level = LogLevel.parse(log_level))
         timestamp = ctx.env.get("NUMAKE_TIMESTAMP", None)
         ctx._timestamp = int(timestamp) if timestamp else None
-        parent = ctx.env.get("NUMAKE_PARENT", None)
-        if parent:
-            ctx.parent = Path(parent)
-        else:
-            ctx.parent = None
 
         return ctx
 
@@ -109,8 +111,6 @@ class Context(object):
         db = self.db
 
         if db.visited(file):
-            if self.parent:
-                db.register_dependency(self.parent, file)
             self.logger.debug(" {0} was visited before", file.get_friendly(self))
             return db.get_checksum(file)
 
@@ -147,7 +147,6 @@ class Context(object):
             "NUMAKE_ROOT": self.root_dir,
             "NUMAKE_START_DIR": self.start_dir,
             "NUMAKE_TIMESTAMP": str(self.timestamp),
-            "NUMAKE_PARENT": target.absolute,
             "NUMAKE_AGENT_PORT": str(self.agent_port),
             "m": match
         }
@@ -233,7 +232,6 @@ class Context(object):
         child.root_dir = self.root_dir
         child.indent = self.indent + "  "
         child._timestamp = self._timestamp
-        child.parent = target
         child.logger = Logger(indent = child.indent, level = self.logger.level)
 
         return child
@@ -297,7 +295,7 @@ class Context(object):
 
     def _handle_source(self, source):
         source_checksum = checksum(source)
-        self.db.register_source(source, source_checksum, self.parent)
+        self.db.register_source(source, source_checksum)
         return source_checksum
 
     def _handle_target(self, target):
@@ -315,7 +313,7 @@ class Context(object):
             match
         )
         db = self.db
-        db.register_target(target, rule, self.parent)
+        db.register_target(target, rule)
 
         # A live target must always be rebuilt
         if rule.is_live:
@@ -453,7 +451,7 @@ class Db(object):
     def get_rule_checksum(self, target):
         return self._get_file_attr(target, "rule")
 
-    def register_source(self, source, checksum, parent):
+    def register_source(self, source, checksum):
         canonical_path = source.get_canonical(self.ctx)
         with self.conn:
             self.conn.execute(
@@ -483,10 +481,8 @@ class Db(object):
                     canonical_path
                 )
             )
-            if parent:
-                self.register_dependency(parent, source)
 
-    def register_target(self, target, rule, parent):
+    def register_target(self, target, rule):
         target_type = FileTypes.LIVE_TARGET if rule.is_live else FileTypes.REGULAR_TARGET
         rule_checksum = rule.checksum
         canonical_path = target.get_canonical(self.ctx)
@@ -499,8 +495,6 @@ class Db(object):
                 "INSERT OR IGNORE INTO file(name, type, rule) VALUES(?, ?, ?)",
                 (canonical_path, target_type, rule_checksum)
             )
-            if parent:
-                self.register_dependency(parent, target)
 
     def built(self, target):
         with self.conn:
@@ -736,7 +730,7 @@ class Rule(object):
                         else:
                             if rhs_type == RuleRhsType.DEPENDENCY:
                                 dependency = token.replace("%", "$m")
-                                dep_line = "\"$NUMAKE\" \"{0}\"".format(dependency)
+                                dep_line = "\"$NUMAKE\" \"{0}\"; \"$NUMAKE\" --depend \"$@\" \"{0}\"".format(dependency)
                                 rule_lines.append(dep_line)
                             elif rhs_type == RuleRhsType.BUILD_VARS:
                                 build_vars[token] = default_vars.get(token, "")
