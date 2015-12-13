@@ -1,0 +1,4 @@
+all: << EXIT_CODE
+	touch rebuilt
+	touch $@
+	exit ${EXIT_CODE}

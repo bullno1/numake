@@ -1,0 +1,24 @@
+#!/bin/sh -e
+
+assert-fail EXIT_CODE=1 numake
+assert '[ -f all ]'
+assert '[ -f rebuilt ]'
+
+# Even if the target exists, it must still be rebuilt
+rm -rf rebuilt
+assert '[ -f all ]'
+assert-fail EXIT_CODE=1 numake
+assert '[ -f all ]'
+assert '[ -f rebuilt ]'
+
+# Only when the build script finishes successfully, it won't be rebuilt
+rm -rf rebuilt
+assert '[ -f all ]'
+assert EXIT_CODE=0 numake
+assert '[ -f all ]'
+assert '[ -f rebuilt ]'
+
+rm -rf rebuilt
+assert EXIT_CODE=0 numake # If EXIT_CODE changes, target will be rebuilt so we keep it
+assert '[ -f all ]'
+assert '[ ! -f rebuilt ]'
