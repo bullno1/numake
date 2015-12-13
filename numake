@@ -58,6 +58,33 @@ class Commands(object):
                 print(rule.pattern.get_friendly(context))
 
     @staticmethod
+    def graph(*args):
+        with Context.create() as context:
+            print("digraph numake {")
+
+            nodes, edges = context.db.get_build_graph()
+
+            for node_name, node_type in nodes:
+                if node_type == FileTypes.SOURCE:
+                    attrs = "[ shape = box ]"
+                elif node_type == FileTypes.REGULAR_TARGET:
+                    attrs = "[ shape = ellipse ]"
+                elif node_type == FileTypes.LIVE_TARGET:
+                    attrs = "[ shape = diamond ]"
+
+                print("\t\"{0}\" {1};".format(node_name, attrs))
+
+            for src, dst, edge_type in edges:
+                if edge_type == DependencyType.REGULAR:
+                    attrs = "[ arrowhead=normal ]"
+                elif edge_type == DependencyType.ORDER_ONLY:
+                    attrs = "[ arrowhead=box ]"
+
+                print("\t\"{0}\" -> \"{1}\" {2}".format(src, dst, attrs))
+
+            print("}")
+
+    @staticmethod
     def targets(*args):
         with Context.create() as context:
             for target in context.db.get_all_targets():
@@ -650,6 +677,20 @@ class Db(object):
                 targets.append(Path(os.path.join(self.ctx.root_dir, row[0])))
 
         return targets
+
+    def get_build_graph(self):
+        with self.conn:
+            nodes = [
+                row for row in self.conn.execute(
+                    "SELECT name, type FROM file"
+                )
+            ]
+            edges = [
+                row for row in self.conn.execute(
+                    "SELECT src, dst, type FROM dependency"
+                )
+            ]
+            return (nodes, edges)
 
     def _get_file_attr(self, file, attr):
         query = "SELECT {0} FROM file WHERE name = ?".format(attr)
