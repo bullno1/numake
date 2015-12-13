@@ -1,0 +1,48 @@
+#!/bin/sh -e
+
+numake
+
+# No rebuild should happen
+rm -rf rebuilt
+numake
+
+assert '[ ! -f rebuilt ]'
+
+# A new file should trigger rebuild
+echo new > dir/new
+rm -rf rebuilt
+numake
+
+assert '[ -f rebuilt ]'
+
+# No rebuild should happen
+rm -rf rebuilt
+numake
+
+assert '[ ! -f rebuilt ]'
+
+# A file with changed content should trigger rebuild
+rm -rf rebuilt
+echo newer > dir/new
+numake
+
+assert '[ -f rebuilt ]'
+
+# No rebuild should happen
+rm -rf rebuilt
+numake
+
+assert '[ ! -f rebuilt ]'
+
+# A missing file should trigger rebuild
+rm -rf rebuilt
+rm dir/old
+numake
+
+assert '[ -f rebuilt ]'
+
+# No rebuild should happen
+rm -rf rebuilt
+numake
+
+assert '[ ! -f rebuilt ]'

@@ -909,7 +909,7 @@ def checksum(path):
 
         for dirpath, dirnames, filenames in os.walk(path.absolute):
             for filename in filenames:
-                sha1.update(checksum(os.path.join(dirpath, filename)))
+                sha1.update(checksum(Path(os.path.join(dirpath, filename))).encode("utf-8"))
 
         return sha1.hexdigest()
 
