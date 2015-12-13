@@ -9,3 +9,6 @@ assert-equal \
 	'match=match-str-that-is-so-loooooooooooooooooooong,subdir-generic' \
 	'`cat subdir/partial-match-str-that-is-so-loooooooooooooooooooong.out`'
 assert-equal 'match=,subdir-specific' '`cat subdir/specific.out`'
+
+file=log numake print:this-is-fine
+assert-equal 'this-is-fine' '`cat log`'

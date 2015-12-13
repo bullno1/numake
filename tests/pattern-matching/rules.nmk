@@ -6,4 +6,7 @@ all: gen.out specific.out subdir/gen.out subdir/partial-match-str-that-is-so-loo
 specific.out:
 	echo "specific,match=$m" > $@
 
+print:%: << file ! live
+	echo $m > ${file}
+
 -include subdir/rules.nmk

@@ -830,7 +830,7 @@ class Rule(object):
                         build_vars = {}
                         extra_attrs = []
 
-                    tokens = line.split(":", 1)
+                    tokens = line.rsplit(":", 1)
                     rule_pattern = Path(os.path.join(working_directory, tokens[0]))
 
                     rhs_type = RuleRhsType.DEPENDENCY
