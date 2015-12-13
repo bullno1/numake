@@ -64,11 +64,13 @@ class Context(object):
 
         agent_port = env.get("NUMAKE_AGENT_PORT", None)
         if agent_port:
+            self.is_root = False
             self._agent_port = int(agent_port)
             self.env = self._query_agent("env")
             self.env.update(env)
         else:
             self._agent_port = None
+            self.is_root = True
             self.env = env
 
         self.start_dir = start_dir or self.env.get("NUMAKE_START_DIR") or os.path.abspath(os.path.curdir)
@@ -202,9 +204,11 @@ class Context(object):
             root_dir = self.root_dir,
             timestamp = self._timestamp,
             parent = target.absolute,
-            indent = self.indent + "  "
+            indent = self.indent + "  ",
+            env = self.env
         )
         child._db = self._db
+        child._rules = self._rules
         return child
 
     @property
@@ -224,8 +228,11 @@ class Context(object):
     @property
     def rules(self):
         if not self._rules:
-            rule_path = Path(os.path.join(self.root_dir, "rules.nmk"))
-            self._rules = Rule.parse(self, rule_path)
+            if self.is_root:
+                rule_path = Path(os.path.join(self.root_dir, "rules.nmk"))
+                self._rules = Rule.parse(self, rule_path)
+            else:
+                self._rules = self._query_agent("rules")
         return self._rules
 
     @property
@@ -355,8 +362,11 @@ class Context(object):
             db.set_visited(target)
             return db.get_checksum(target)
 
-    def _query_agent(self, cmd):
-        self.rpc_sock.sendto(cmd.encode("utf-8"), ("127.0.0.1", self.agent_port))
+    def _query_agent(self, *cmd):
+        self.rpc_sock.sendto(
+            pickle.dumps(cmd, pickle.HIGHEST_PROTOCOL),
+            ("127.0.0.1", self.agent_port)
+        )
         return pickle.loads(self.rpc_sock.recv(65535))
 
 class Db(object):
@@ -772,25 +782,36 @@ class WriteThread(Thread):
         self.pipe.close()
 
 class Agent(Thread):
-    NONE = pickle.dumps(None)
+    NONE = pickle.dumps(None, pickle.HIGHEST_PROTOCOL)
 
     def __init__(self, context):
         Thread.__init__(self)
-        self.env = pickle.dumps(context.env)
+        self.env = pickle.dumps(context.env, pickle.HIGHEST_PROTOCOL)
+        self.rules = pickle.dumps(context.rules, pickle.HIGHEST_PROTOCOL)
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind(("127.0.0.1", 0))
+        self.logger = context.logger
         addr, port = self.sock.getsockname()
         self.port = port
 
     def run(self):
         self.running = True
+        self.logger.debug("(agent@{0}) Started", self.port)
         while self.running:
             cmd, addr = self.sock.recvfrom(65535)
-            method = getattr(self, "_cmd_" + cmd.decode("utf-8"), None)
+            cmd = pickle.loads(cmd)
+            method = getattr(self, "_cmd_" + cmd[0], None)
             if method:
-                self.sock.sendto(method(), addr)
+                self.logger.debug(
+                    "(agent@{0}) Received command {1} from {2}",
+                    self.port, cmd, addr
+                )
+                self.sock.sendto(method(*cmd[1:]), addr)
             else:
-                print("not handled")
+                self.logger.warning(
+                    "(agent@{0}) Received invalid command {1} from {2}",
+                    self.port, cmd, addr
+                )
 
     def _cmd_env(self):
         return self.env
@@ -798,6 +819,9 @@ class Agent(Thread):
     def _cmd_stop(self):
         self.running = False
         return Agent.NONE
+
+    def _cmd_rules(self):
+        return self.rules
 
 class Logger(object):
     def __init__(self, indent, level):
