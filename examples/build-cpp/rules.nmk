@@ -1,4 +1,6 @@
 build_dir = tmp
+c_flags = -Wall -Werror
+cpp_flags = -Wall -Werror
 
 all: program ! live
 
