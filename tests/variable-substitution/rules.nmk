@@ -1,11 +1,12 @@
 suffix = efgh
 var = abcd-${suffix}
+default = ${default:-default_val}
 
-all: ${var} << var
-	touch $@
+all: ${var} << var default
+	echo ${default} > $@
 
 %-$suffix: %
-	touch $@
+	echo ${default} > $@ # Variable not imported so it will be empty
 
-abcd:
-	touch $@
+abcd: << default2
+	echo ${default2:-default2_val} > $@

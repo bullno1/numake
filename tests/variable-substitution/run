@@ -5,3 +5,12 @@ numake
 assert '[ -f all ]'
 assert '[ -f abcd-efgh ]'
 assert '[ -f abcd ]'
+
+assert-equal 'default_val' '`cat all`'
+assert-equal 'default2_val' '`cat abcd`'
+assert-equal '' '`cat abcd-efgh`'
+
+default=changed default2=changed2 numake
+assert-equal 'changed' '`cat all`'
+assert-equal 'changed2' '`cat abcd`'
+assert-equal '' '`cat abcd-efgh`'
