@@ -97,3 +97,22 @@ rm -rf log
 PATH=/opt/wat:$PATH assert VAR=new numake a
 
 assert '[ ! -f log ]'
+
+# Rule change triggers rebuild
+rm -rf log
+cp rules-new.nmk rules.nmk
+PATH=/opt/wat:$PATH assert VAR=new numake a
+
+assert 'diff log3 log'
+
+# No more rebuild
+rm -rf log
+PATH=/opt/wat:$PATH assert VAR=new numake a
+
+assert '[ ! -f log ]'
+
+# No more rebuild
+rm -rf log
+PATH=/opt/wat:$PATH assert VAR=new numake a
+
+assert '[ ! -f log ]'
