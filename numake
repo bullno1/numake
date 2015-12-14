@@ -114,6 +114,14 @@ class Commands(object):
                 print(target.get_friendly(context))
 
     @staticmethod
+    def clean(args, env):
+        with Context.create(env = env) as context:
+            for target in context.db.get_all_targets():
+                if os.path.isfile(target.absolute):
+                    print("rm {0}".format(target.get_friendly(context)))
+                    rm(target.absolute)
+
+    @staticmethod
     def init(args, env):
         ensure_dir(os.path.join(os.path.abspath(os.path.curdir), ".numake"))
 
