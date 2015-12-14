@@ -273,19 +273,15 @@ class Context(object):
         self.logger.debug(" End subprocess")
 
         if build_process.returncode == 0:
-            if rule.is_live:
-                self.logger.debug(" End rebuild {0}", target.get_friendly(self))
-                return "" # No point in hashing or tracking live target
-            else:
-                if not os.path.exists(target.absolute):
-                    return fail(
-                        "Target not generated: {0}",
-                        target.get_friendly(self)
-                    )
-                target_checksum = checksum(target)
-                db.update_target(target, target_checksum)
-                self.logger.debug(" End rebuild {0}", target.get_friendly(self))
-                return target_checksum
+            if not rule.is_live and not os.path.exists(target.absolute):
+                return fail(
+                    "Target not generated: {0}",
+                    target.get_friendly(self)
+                )
+            target_checksum = checksum(target)
+            db.update_target(target, target_checksum)
+            self.logger.debug(" End rebuild {0}", target.get_friendly(self))
+            return target_checksum
         else:
             return fail(
                 "Failed to build target: {0}",

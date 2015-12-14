@@ -1,0 +1,6 @@
+#!/bin/sh -e
+
+assert-fail numake
+cat rules-new.nmk > rules.nmk
+
+assert numake

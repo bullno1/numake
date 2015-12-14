@@ -1,0 +1,12 @@
+#!/bin/sh -e
+
+rm -rf log
+numake
+
+assert 'diff log1 log'
+
+rm -rf log a b c
+
+numake
+
+assert 'diff log1 log'
