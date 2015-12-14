@@ -1,0 +1,6 @@
+#!/bin/sh -e
+
+numake
+
+assert-equal '"regular1 regular2"' '`cat deps`'
+assert-equal '"order3 order4"' '`cat order_deps`'

@@ -976,8 +976,12 @@ class Rule(object):
 
     @property
     def prolog(self):
-        regular_dep_prolog = Rule._build_prolog(self.regular_deps, "--depend")
-        order_dep_prolog = Rule._build_prolog(self.order_deps, "--order-only")
+        regular_dep_prolog = Rule._build_prolog(
+            self.regular_deps, "deps", "--depend"
+        )
+        order_dep_prolog = Rule._build_prolog(
+            self.order_deps, "order_deps", "--order-only"
+        )
         return regular_dep_prolog + "\n" + order_dep_prolog + "\n"
 
     @property
@@ -990,10 +994,10 @@ class Rule(object):
         return "live" in self.extra_attrs
 
     @staticmethod
-    def _build_prolog(deps, flags):
+    def _build_prolog(deps, var, flags):
         if len(deps) > 0:
-            return "\"$NUMAKE\" {0} {1}".format(
-                flags, " ".join(deps)
+            return "{1}=\"{0}\";\"$NUMAKE\" {2} {0}".format(
+                " ".join(deps), var, flags
             )
         else:
             return ""
