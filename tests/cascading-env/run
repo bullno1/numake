@@ -1,0 +1,6 @@
+#!/bin/sh -e
+
+numake
+
+assert-equal '"cascaded"' '`cat c`'
+assert-equal '"cascaded too"' '`cat d`'

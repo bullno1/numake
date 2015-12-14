@@ -156,7 +156,8 @@ class Context(object):
         if agent_port:
             ctx.is_root = False
             ctx._agent_port = int(agent_port)
-            ctx.env = ctx._query_agent("env")
+            parent_id = int(env.get("NUMAKE_PARENT_ID"))
+            ctx.env = ctx._query_agent("get_env", parent_id)
             ctx.env.update(env)
         else:
             ctx.is_root = True
@@ -234,14 +235,17 @@ class Context(object):
         out = os.path.relpath(target.absolute, rule.working_directory)
         env = {
             "NUMAKE": os.path.realpath(sys.argv[0]),
-            "NUMAKE_TIMESTAMP": str(self.timestamp),
             "NUMAKE_AGENT_PORT": str(self.agent_port),
+            "NUMAKE_PARENT_ID": str(self.instance_id),
             "NUMAKE_TARGET": target.absolute,
             "m": match
         }
         env.update(build_vars)
 
         rm(target.absolute)
+        cascaded_env = self.env.copy()
+        cascaded_env.update(build_vars)
+        self._query_agent("put_env", self.instance_id, cascaded_env)
 
         self.logger.debug(" Begin subprocess")
         # -s: Read commands from stdin
@@ -380,8 +384,14 @@ class Context(object):
     def rpc_sock(self):
         if not self._rpc_sock:
             self._rpc_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            self._rpc_sock.bind(('127.0.0.1', 0))
 
         return self._rpc_sock
+
+    @property
+    def instance_id(self):
+        ip, port = self.rpc_sock.getsockname()
+        return port
 
     @staticmethod
     def _find_root(start_dir):
@@ -1034,7 +1044,10 @@ class Agent(Thread):
 
     def __init__(self, context):
         Thread.__init__(self)
-        self.env = pickle.dumps(context.env, pickle.HIGHEST_PROTOCOL)
+
+        self.root_env = context.env.copy()
+        self.root_env["NUMAKE_TIMESTAMP"] = context.timestamp
+        self.envs = {}
         self.rules = pickle.dumps(context.rules, pickle.HIGHEST_PROTOCOL)
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind(("127.0.0.1", 0))
@@ -1062,8 +1075,14 @@ class Agent(Thread):
                 )
         self.logger.debug(" (agent@{0}) Stopped", self.port)
 
-    def _cmd_env(self):
-        return self.env
+    def _cmd_get_env(self, env_id):
+        return self.envs.get(env_id, None)
+
+    def _cmd_put_env(self, env_id, env):
+        new_env = self.root_env.copy()
+        new_env.update(env)
+        self.envs[env_id] = pickle.dumps(new_env, pickle.HIGHEST_PROTOCOL)
+        return Agent.NONE
 
     def _cmd_stop(self):
         self.running = False
