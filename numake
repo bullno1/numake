@@ -863,7 +863,12 @@ class Rule(object):
                         extra_attrs = []
 
                     tokens = line.rsplit(":", 1)
-                    rule_pattern = Path(os.path.join(working_directory, tokens[0]))
+                    rule_pattern = Path(
+                        os.path.join(
+                            working_directory,
+                            shell_eval(tokens[0], default_vars)
+                        )
+                    )
 
                     rhs_type = RuleRhsType.DEPENDENCY
                     for token in filter(None, tokens[1].split(" ")):
@@ -895,9 +900,9 @@ class Rule(object):
                     # This is a var line
                     var_tokens = line.split("=", 1)
                     var_name = var_tokens[0].rstrip(" ")
-                    var_value = subprocess.check_output(
-                        ["echo", var_tokens[1].lstrip(" ")]
-                    ).decode("utf-8").rstrip("\r\n")
+                    var_value = shell_eval(
+                        var_tokens[1].lstrip(" "), default_vars
+                    )
                     default_vars[var_name] = var_value
                 else:
                     return fail(
@@ -1060,6 +1065,17 @@ def rm(path):
         os.remove(path)
     elif os.path.isdir(path):
         shutil.rmtree(path)
+
+def shell_eval(exp, env):
+    shell = subprocess.Popen(
+        ["sh", "-c", "echo " + exp],
+        stdin = None,
+        stdout = subprocess.PIPE,
+        stderr = None,
+        env = env
+    )
+    out, err = shell.communicate()
+    return out.decode("utf-8").rstrip("\r\n")
 
 def checksum(path):
     if os.path.isfile(path.absolute):

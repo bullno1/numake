@@ -1,0 +1,7 @@
+#!/bin/sh -e
+
+numake
+
+assert '[ -f all ]'
+assert '[ -f abcd-efgh ]'
+assert '[ -f abcd ]'

@@ -1,0 +1,11 @@
+suffix = efgh
+var = abcd-${suffix}
+
+all: ${var} << var
+	touch $@
+
+%-$suffix: %
+	touch $@
+
+abcd:
+	touch $@
