@@ -1,0 +1,9 @@
+build_dir = tmp
+
+all: program ! live
+
+program:
+	${NUMAKE} exe:$@ \
+		sources="`find src -name '*.cpp' -or -name '*.c'`"
+
+-import cpp.nmk
