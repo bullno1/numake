@@ -6,7 +6,7 @@ c_flags = ${c_flags:--Wall}
 cpp_flags = ${cpp_flags:--Wall}
 
 # A phony rule to register target as an executable
-exe:%: ${build_dir}/exe-${m} << sources build_dir ! live
+exe:%: ${build_dir}/exe-% << build_dir ! live
 	cp ${build_dir}/exe-${m} $m
 
 # A temporary file will be built in the build directory.
