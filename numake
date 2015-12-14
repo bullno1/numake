@@ -808,7 +808,7 @@ class Rule(object):
                     continue
 
                 if line[0].isspace():
-                    # This is a rule line
+                    # Rule
                     if rule_pattern:
                         rule_lines.append(line)
                     else:
@@ -817,10 +817,10 @@ class Rule(object):
                             friendly_path, line_no
                         )
                 elif line.startswith("#"):
-                    # This is a comment
+                    # Comment
                     continue
                 elif line.startswith("-include"):
-                    # This is an include directive
+                    # Include directive
                     subrule_file_name = line[len("-include") + 1:]
                     subrule_file_path = Path(
                         os.path.join(rule_dir, subrule_file_name)
@@ -843,7 +843,7 @@ class Rule(object):
                         )
                     )
                 elif line.startswith("-import"):
-                    # This is an import directive
+                    # Import directive
                     imported_file_name = line[len("-import") + 1:]
                     imported_file_path = Path(
                         os.path.join(rule_dir, imported_file_name)
@@ -861,8 +861,15 @@ class Rule(object):
                     rules.extend(
                         Rule.parse(ctx, imported_file_path, working_directory)
                     )
+                elif "=" in line:
+                    # Var assignment
+                    var_tokens = line.split("=", 1)
+                    var_name = var_tokens[0].rstrip(" ")
+                    default_vars[var_name] = shell_eval(
+                        var_tokens[1].lstrip(" "), default_vars
+                    )
                 elif ":" in line:
-                    # This is a rule header line
+                    # Rule header
                     if rule_pattern:
                         rule = Rule(
                             working_directory = working_directory,
@@ -915,14 +922,6 @@ class Rule(object):
                                         token, friendly_path, line_no
                                     )
                                 extra_attrs.append(token)
-                elif "=" in line:
-                    # This is a var line
-                    var_tokens = line.split("=", 1)
-                    var_name = var_tokens[0].rstrip(" ")
-                    var_value = shell_eval(
-                        var_tokens[1].lstrip(" "), default_vars
-                    )
-                    default_vars[var_name] = var_value
                 else:
                     return fail(
                         "Syntax error in {0}, line {1}",
@@ -1093,11 +1092,17 @@ def shell_eval(exp, env):
         ["sh", "-c", "echo " + exp],
         stdin = None,
         stdout = subprocess.PIPE,
-        stderr = None,
+        stderr = subprocess.PIPE,
         env = env
     )
     out, err = shell.communicate()
-    return out.decode("utf-8").rstrip("\r\n")
+    if shell.returncode == 0:
+        return out.decode("utf-8").rstrip("\r\n")
+    else:
+        return fail(
+            "Error while evaluating {0}: {1}",
+            exp, err.decode("utf-8")
+        )
 
 def checksum(path):
     if os.path.isfile(path.absolute):
