@@ -253,7 +253,7 @@ class Context(object):
         # -x: Trace commands
         # Passing in "out" will make $@ point to output like in Makefile
         if self.logger.level == LogLevel.TRACE:
-            cmd = ["sh", "-s", "-x", "-e", out]
+            cmd = ["sh", "-s", "-e", "-x", out]
         else:
             cmd = ["sh", "-s", "-e", out]
         build_process = subprocess.Popen(
