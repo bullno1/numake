@@ -148,7 +148,9 @@ class Context(object):
         ctx.root_dir = ctx.env.get("NUMAKE_ROOT")
         ctx.indent = ""
         log_level = ctx.env.get("NUMAKE_LOG_LEVEL")
-        ctx.logger = Logger(indent = ctx.indent, level = LogLevel.parse(log_level))
+        ctx.logger = Logger(
+            indent = ctx.indent, level = LogLevel.parse(log_level)
+        )
         timestamp = ctx.env.get("NUMAKE_TIMESTAMP", None)
         ctx._timestamp = int(timestamp) if timestamp else None
 
@@ -171,7 +173,10 @@ class Context(object):
         db = self.db
 
         if db.visited(file):
-            self.logger.debug(" {0} was visited before", file.get_friendly(self))
+            self.logger.debug(
+                " {0} was visited before",
+                file.get_friendly(self)
+            )
             return db.get_checksum(file)
 
         file_type = db.get_type(file)
@@ -563,7 +568,10 @@ class Db(object):
             )
 
     def register_target(self, target, rule):
-        target_type = FileTypes.LIVE_TARGET if rule.is_live else FileTypes.REGULAR_TARGET
+        if rule.is_live:
+            target_type = FileTypes.LIVE_TARGET
+        else:
+            target_type = FileTypes.REGULAR_TARGET
         rule_checksum = rule.checksum
         canonical_path = target.get_canonical(self.ctx)
         with self.conn:
@@ -587,7 +595,10 @@ class Db(object):
 
     def reset_target(self, target, rule, build_vars):
         canonical_path = target.get_canonical(self.ctx)
-        file_type = FileTypes.LIVE_TARGET if rule.is_live else FileTypes.REGULAR_TARGET
+        if rule.is_live:
+            file_type = FileTypes.LIVE_TARGET
+        else:
+            file_type = FileTypes.REGULAR_TARGET
         build_vars_params = [
             (canonical_path, name, value) for name, value in build_vars.items()
         ]
@@ -763,7 +774,8 @@ class Rule(object):
         "PATH"
     ]
 
-    def __init__(self, working_directory, pattern, body, build_vars, extra_attrs):
+    def __init__(
+            self, working_directory, pattern, body, build_vars, extra_attrs):
         self.working_directory = working_directory
         self.pattern = pattern
         self.body = body
@@ -815,7 +827,9 @@ class Rule(object):
                     )
                     if os.path.isdir(subrule_file_path.absolute):
                         subrule_file_path = Path(
-                            os.path.join(subrule_file_path.absolute, "rules.nmk")
+                            os.path.join(
+                                subrule_file_path.absolute, "rules.nmk"
+                            )
                         )
                     ctx.logger.trace(
                         " Parsing include file: {0}",
@@ -836,7 +850,9 @@ class Rule(object):
                     )
                     if os.path.isdir(imported_file_path.absolute):
                         imported_file_path = Path(
-                            os.path.join(imported_file_path.absolute, "rules.nmk")
+                            os.path.join(
+                                imported_file_path.absolute, "rules.nmk"
+                            )
                         )
                     ctx.logger.trace(
                         " Parsing import file: {0}",
@@ -855,7 +871,10 @@ class Rule(object):
                             build_vars = build_vars,
                             extra_attrs = extra_attrs
                         )
-                        ctx.logger.trace(" Add rule: {0}", rule_pattern.get_friendly(ctx))
+                        ctx.logger.trace(
+                            " Add rule: {0}",
+                            rule_pattern.get_friendly(ctx)
+                        )
                         rules.append(rule)
 
                         rule_lines = []
@@ -918,7 +937,10 @@ class Rule(object):
                     build_vars = build_vars,
                     extra_attrs = extra_attrs
                 )
-                ctx.logger.trace(" Add rule: {0}", rule_pattern.get_friendly(ctx))
+                ctx.logger.trace(
+                    " Add rule: {0}",
+                    rule_pattern.get_friendly(ctx)
+                )
                 rules.append(rule)
 
             return rules
@@ -1093,7 +1115,11 @@ def checksum(path):
 
         for dirpath, dirnames, filenames in os.walk(path.absolute):
             for filename in filenames:
-                sha1.update(checksum(Path(os.path.join(dirpath, filename))).encode("utf-8"))
+                sha1.update(
+                    checksum(
+                        Path(os.path.join(dirpath, filename))
+                    ).encode("utf-8")
+                )
 
         return sha1.hexdigest()
 
