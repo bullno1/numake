@@ -3,7 +3,7 @@
 # compile.sh <source> <obj> <compiler> <flags>
 
 # Compile source to object file
-mkdir -p $(dirname $2)
+${NUMAKE} --order-only $(dirname $2)/
 $3 -c $1 -o $2 $4 -MMD -MF $2.d
 
 # Add headers dependency

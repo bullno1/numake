@@ -19,8 +19,8 @@ $build_dir/exe-%: << sources build_dir linker
 		objs="${objs} ${obj_file}"
 	done
 	${NUMAKE} --depend ${objs}
+	${NUMAKE} --order-only $(dirname $@)/
 
-	mkdir -p $(dirname $@)
 	${linker} -o $@ ${objs}
 
 # Compiling *.cpp and compiling *.c are pretty similar so we extract the common
@@ -33,3 +33,6 @@ $build_dir/%.c.o: ${compile} %.c << compile build_dir c_compiler c_flags
 
 $build_dir/%.cpp.o: ${compile} %.cpp << compile build_dir cpp_compiler cpp_flags
 	${deps} "$@" "${cpp_compiler}" "${cpp_flags}"
+
+$build_dir/%/:
+	mkdir -p $@
