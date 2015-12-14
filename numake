@@ -32,6 +32,10 @@ class Commands(object):
         Commands.__build(DependencyType.REGULAR, files)
 
     @staticmethod
+    def depend(*args):
+        Commands.__build(DependencyType.REGULAR, args)
+
+    @staticmethod
     def order_only(*args):
         Commands.__build(DependencyType.ORDER_ONLY, args)
 
@@ -907,7 +911,7 @@ class Rule(object):
                         else:
                             if rhs_type == RuleRhsType.DEPENDENCY:
                                 dependency = token.replace("%", "$m")
-                                dep_line = "\"$NUMAKE\" {0}".format(dependency)
+                                dep_line = "\"$NUMAKE\" --depend {0}".format(dependency)
                                 rule_lines.append(dep_line)
                             elif rhs_type == RuleRhsType.ORDER_ONLY_DEPENDENCY:
                                 dependency = token.replace("%", "$m")
