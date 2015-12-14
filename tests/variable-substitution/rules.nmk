@@ -3,7 +3,7 @@ var = abcd-${suffix}
 default = ${default:-default_val}
 scoped = outer
 
--import sub.nmk
+-import sub/sub.nmk
 
 scoped: << scoped
 	echo ${scoped} > $@

@@ -901,7 +901,7 @@ class Rule(object):
                     var_tokens = line.split("=", 1)
                     var_name = var_tokens[0].rstrip(" ")
                     env[var_name] = shell_eval(
-                        var_tokens[1].lstrip(" "), env
+                        var_tokens[1].lstrip(" "), env, rule_dir
                     )
                 elif ":" in line:
                     # Rule header
@@ -931,7 +931,7 @@ class Rule(object):
                     rule_pattern = Path(
                         os.path.join(
                             working_directory,
-                            shell_eval(tokens[0], env)
+                            shell_eval(tokens[0], env, rule_dir),
                         )
                     )
 
@@ -1144,12 +1144,13 @@ def rm(path):
     elif os.path.isdir(path):
         shutil.rmtree(path)
 
-def shell_eval(exp, env):
+def shell_eval(exp, env, cwd):
     shell = subprocess.Popen(
         ["sh", "-c", "echo " + exp],
         stdin = None,
         stdout = subprocess.PIPE,
         stderr = subprocess.PIPE,
+        cwd = cwd,
         env = env
     )
     out, err = shell.communicate()

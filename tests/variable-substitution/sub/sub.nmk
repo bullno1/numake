@@ -1,6 +1,7 @@
 scoped = inner
+wat = `cat wat`
 
-all: ${var} scoped inner << var default
+all: ${var} scoped inner check-pwd << var default
 	echo ${default} > $@
 
 %-$suffix: %
@@ -11,3 +12,6 @@ abcd: << default2
 
 inner: << scoped
 	echo ${scoped} > $@
+
+check-pwd: << wat
+	echo ${wat} > $@

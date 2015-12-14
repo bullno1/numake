@@ -11,9 +11,11 @@ assert-equal 'default2_val' '`cat abcd`'
 assert-equal '' '`cat abcd-efgh`'
 assert-equal 'outer' '`cat scoped`'
 assert-equal 'inner' '`cat inner`'
+assert-equal 'aye' '`cat check-pwd`'
 
 default=changed default2=changed2 numake
 assert-equal 'changed' '`cat all`'
 assert-equal 'changed2' '`cat abcd`'
 assert-equal '' '`cat abcd-efgh`'
 assert-equal 'inner' '`cat inner`'
+assert-equal 'aye' '`cat check-pwd`'
