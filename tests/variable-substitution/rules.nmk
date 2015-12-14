@@ -1,12 +1,9 @@
 suffix = efgh
 var = abcd-${suffix}
 default = ${default:-default_val}
+scoped = outer
 
-all: ${var} << var default
-	echo ${default} > $@
+-import sub.nmk
 
-%-$suffix: %
-	echo ${default} > $@ # Variable not imported so it will be empty
-
-abcd: << default2
-	echo ${default2:-default2_val} > $@
+scoped: << scoped
+	echo ${scoped} > $@

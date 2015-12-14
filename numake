@@ -331,7 +331,10 @@ class Context(object):
             elif self.is_root:
                 rule_path = Path(os.path.join(self.root_dir, "rules.nmk"))
                 self._rules = Rule.parse(
-                    self, rule_path, os.path.dirname(rule_path.absolute)
+                    self,
+                    rule_path,
+                    os.path.dirname(rule_path.absolute),
+                    self.env.copy()
                 )
             else:
                 self._rules = self._query_agent("rules")
@@ -787,7 +790,7 @@ class Rule(object):
         self.extra_attrs = extra_attrs
 
     @staticmethod
-    def parse(ctx, path, working_directory):
+    def parse(ctx, path, working_directory, env):
         friendly_path = path.get_friendly(ctx)
         ctx.logger.debug(" Parsing rule file: {0}", friendly_path)
         rule_dir = os.path.dirname(path.absolute)
@@ -801,7 +804,6 @@ class Rule(object):
         rule_lines = []
         build_vars = {}
         extra_attrs = []
-        default_vars = {}
 
         with open(path.absolute) as rule_file:
             for line in rule_file:
@@ -843,7 +845,8 @@ class Rule(object):
                         Rule.parse(
                             ctx,
                             subrule_file_path,
-                            os.path.dirname(subrule_file_path.absolute)
+                            os.path.dirname(subrule_file_path.absolute),
+                            env.copy()
                         )
                     )
                 elif line.startswith("-import"):
@@ -863,14 +866,19 @@ class Rule(object):
                         imported_file_path.get_friendly(ctx)
                     )
                     rules.extend(
-                        Rule.parse(ctx, imported_file_path, working_directory)
+                        Rule.parse(
+                            ctx,
+                            imported_file_path,
+                            working_directory,
+                            env.copy()
+                        )
                     )
                 elif "=" in line:
                     # Var assignment
                     var_tokens = line.split("=", 1)
                     var_name = var_tokens[0].rstrip(" ")
-                    default_vars[var_name] = shell_eval(
-                        var_tokens[1].lstrip(" "), default_vars
+                    env[var_name] = shell_eval(
+                        var_tokens[1].lstrip(" "), env
                     )
                 elif ":" in line:
                     # Rule header
@@ -896,7 +904,7 @@ class Rule(object):
                     rule_pattern = Path(
                         os.path.join(
                             working_directory,
-                            shell_eval(tokens[0], default_vars)
+                            shell_eval(tokens[0], env)
                         )
                     )
 
@@ -918,7 +926,7 @@ class Rule(object):
                                 dep_line = "\"$NUMAKE\" --order-only {0}".format(dependency)
                                 rule_lines.append(dep_line)
                             elif rhs_type == RuleRhsType.BUILD_VARS:
-                                build_vars[token] = default_vars.get(token, "")
+                                build_vars[token] = env.get(token, "")
                             elif rhs_type == RuleRhsType.EXTRA_ATTRS:
                                 if token not in Rule.EXTRA_ATTRS:
                                     return fail(

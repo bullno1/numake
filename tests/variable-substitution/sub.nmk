@@ -1,0 +1,13 @@
+scoped = inner
+
+all: ${var} scoped inner << var default
+	echo ${default} > $@
+
+%-$suffix: %
+	echo ${default} > $@ # Variable not imported so it will be empty
+
+abcd: << default2
+	echo ${default2:-default2_val} > $@
+
+inner: << scoped
+	echo ${scoped} > $@
