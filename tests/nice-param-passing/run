@@ -1,0 +1,13 @@
+#!/bin/sh -e
+
+numake write text=hi file=out
+assert-equal '"hi"' '`cat out`'
+
+text=hihi numake write file=out2
+assert-equal '"hihi"' '`cat out2`'
+
+text=hihihi file=out3 numake write
+assert-equal '"hihihi"' '`cat out3`'
+
+text=hihihi file=out4 numake write text=nope
+assert-equal '"nope"' '`cat out4`'

@@ -13,41 +13,54 @@ import socket
 import pickle
 
 def main(*args):
-    return dispatch_cmd(args[0], *args[1:])
+    env, args = parse_args(args[1:], os.environ)
+    return dispatch_cmd("numake", args, env)
 
-def dispatch_cmd(cmd_name, *args):
-    cmd_func = getattr(Commands, os.path.basename(cmd_name), None)
+def parse_args(args, env):
+    env = env.copy()
+    parsed_args = []
+    for arg in args:
+        if "=" in arg:
+            var_tokens = arg.split("=")
+            env[var_tokens[0]] = var_tokens[1]
+        else:
+            parsed_args.append(arg)
+
+    return (env, parsed_args)
+
+def dispatch_cmd(cmd_name, args, env):
+    cmd_func = getattr(Commands, cmd_name, None)
     if cmd_func:
-        return cmd_func(*args)
+        return cmd_func(args, env)
     else:
         return fail("Invalid command: {0}", cmd_name)
 
 class Commands(object):
     @staticmethod
-    def numake(*args):
+    def numake(args, env):
         if len(args) >= 1 and args[0][:2] == "--":
-            return dispatch_cmd(args[0][2:].replace("-", "_"), *args[1:])
+            return dispatch_cmd(args[0][2:].replace("-", "_"), args[1:], env)
 
         files = args if len(args) >= 1 else ["all"]
-        Commands.__build(DependencyType.REGULAR, files)
+        Commands.__build(DependencyType.REGULAR, files, env)
 
     @staticmethod
-    def depend(*args):
-        Commands.__build(DependencyType.REGULAR, args)
+    def depend(args, env):
+        Commands.__build(DependencyType.REGULAR, args, env)
 
     @staticmethod
-    def order_only(*args):
-        Commands.__build(DependencyType.ORDER_ONLY, args)
+    def order_only(args, env):
+        Commands.__build(DependencyType.ORDER_ONLY, args, env)
 
     @staticmethod
-    def rules(*args):
-        with Context.create() as context:
+    def rules(args, env):
+        with Context.create(env = env) as context:
             for rule in context.rules:
                 print(rule.pattern.get_friendly(context))
 
     @staticmethod
-    def graph(*args):
-        with Context.create() as context:
+    def graph(args, env):
+        with Context.create(env = env) as context:
             print("digraph numake {")
 
             nodes, edges = context.db.get_build_graph()
@@ -73,8 +86,8 @@ class Commands(object):
             print("}")
 
     @staticmethod
-    def gc(*args):
-        with Context.create() as context:
+    def gc(args, env):
+        with Context.create(env = env) as context:
             nodes, edges = context.db.get_build_graph()
 
             garbage_nodes = []
@@ -95,20 +108,20 @@ class Commands(object):
             context.db.delete_nodes(garbage_nodes)
 
     @staticmethod
-    def targets(*args):
-        with Context.create() as context:
+    def targets(args, env):
+        with Context.create(env = env) as context:
             for target in context.db.get_all_targets():
                 print(target.get_friendly(context))
 
     @staticmethod
-    def init(*args):
+    def init(args, env):
         ensure_dir(os.path.join(os.path.abspath(os.path.curdir), ".numake"))
 
     @staticmethod
-    def __build(dependency_type, targets):
+    def __build(dependency_type, targets, env):
         targets = [Path(target) for target in targets]
 
-        with Context.create() as context:
+        with Context.create(env = env) as context:
             for target in targets:
                 context.numake(target)
 
