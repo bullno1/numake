@@ -1,11 +1,12 @@
-build_dir = tmp
-c_flags = -Wall -Werror
-cpp_flags = -Wall -Werror
+BUILD_DIR = ${BUILD_DIR:-tmp}
+C_FLAGS = -Wall -Werror
+CPP_FLAGS = -Wall -Werror
 
 -import cpp.nmk
 
 all: program ! live
 
-program:
+program: << C_FLAGS
 	${NUMAKE} exe:$@ \
-		sources="`find src -name '*.cpp' -or -name '*.c'`"
+		sources="`find src -name '*.cpp' -or -name '*.c'`" \
+		c_flags="${C_FLAGS} -pedantic"
