@@ -1,9 +1,9 @@
-BUILD_DIR = ${BUILD_DIR:-.build}
-C_COMPILER = ${C_COMPILER:-gcc}
-CPP_COMPILER = ${CPP_COMPILER:-g++}
-LINKER = ${LINKER:-g++}
-C_FLAGS = ${C_FLAGS:--Wall}
-CPP_FLAGS = ${CPP_FLAGS:--Wall}
+BUILD_DIR ?= .build
+C_COMPILER ?= gcc
+CPP_COMPILER ?= g++
+LINKER ?= g++
+C_FLAGS ?= -Wall
+CPP_FLAGS ?= -Wall
 
 # A phony rule to register target as an executable
 exe:%: ${BUILD_DIR}/exe-% << BUILD_DIR ! live
