@@ -1,0 +1,13 @@
+#!/bin/sh -e
+
+numake
+
+assert-equal '"a"' '`cat var1`'
+assert-equal '"a"' '`cat var2`'
+assert-equal '"wat"' '`cat var3`'
+
+numake var1=c var2=d var3=watwatinthebutt
+
+assert-equal '"c"' '`cat var1`'
+assert-equal '"a"' '`cat var2`'
+assert-equal '"wat"' '`cat var3`'

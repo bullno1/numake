@@ -902,6 +902,14 @@ class Rule(object):
                             env.copy()
                         )
                     )
+                elif "?=" in line:
+                    # Default var assignment
+                    var_tokens = line.split("?=", 1)
+                    var_name = var_tokens[0].rstrip(" ")
+                    if not env.get(var_name, None):
+                        env[var_name] = shell_eval(
+                            var_tokens[1].lstrip(" "), env, rule_dir
+                        )
                 elif "=" in line:
                     # Var assignment
                     var_tokens = line.split("=", 1)
