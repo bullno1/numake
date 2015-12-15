@@ -226,8 +226,8 @@ class Context(object):
         build_vars = {}
         for var in Rule.IMPLICIT_BUILD_VARS:
             build_vars[var] = self.env.get(var)
-        for var, default in rule.build_vars.items():
-            build_vars[var] = self.env.get(var, default)
+        for var, value in rule.build_vars.items():
+            build_vars[var] = value or self.env.get(var, "")
         db = self.db
         db.reset_target(target, rule, build_vars)
 
@@ -445,9 +445,9 @@ class Context(object):
 
         # A change in build vars triggers a rebuild
         old_build_vars = db.get_build_vars(target)
-        for var, default in rule.build_vars.items():
-            old_value = old_build_vars.get(var, None)
-            new_value = self.env.get(var, default)
+        for var, value in rule.build_vars.items():
+            old_value = old_build_vars.get(var, "")
+            new_value = value or self.env.get(var, "")
             if new_value != old_value:
                 self.logger.debug(
                     " Target's build var \"{0}\" changed",

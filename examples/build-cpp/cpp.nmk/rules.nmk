@@ -31,7 +31,7 @@ compile = $(readlink -f compile.sh)
 $build_dir/%.c.o: ${compile} %.c << compile build_dir c_compiler c_flags
 	${deps} "$@" "${c_compiler}" "${c_flags}"
 
-$build_dir/%.cpp.o: ${compile} %.cpp << compile build_dir cpp_compiler cpp_flags
+$build_dir/%.cpp.o: ${compile} %.cpp << $compile $build_dir $cpp_compiler $cpp_flags
 	${deps} "$@" "${cpp_compiler}" "${cpp_flags}"
 
 $build_dir/%/:

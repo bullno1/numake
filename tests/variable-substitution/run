@@ -25,12 +25,11 @@ numake check-consistency2
 
 numake check-consistency var2=def
 numake check-consistency2 var2=def
-numake def.check var2=def
 
 numake check-consistency var3=watwat
 numake check-consistency2 var3=watwat
-numake watwat.check var3=watwat
 
 numake check-consistency var2=yay var3=nah
 numake check-consistency2 var2=yay var3=nah
-numake yay.check nah.check var2=yay var3=nah
+
+numake check-param var5=wat
