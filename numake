@@ -849,7 +849,7 @@ class Rule(object):
                     continue
                 elif line.startswith("-include"):
                     # Include directive
-                    subrule_file_name = line[len("-include") + 1:]
+                    subrule_file_name = line[len("-include") + 1:].strip()
                     subrule_file_path = Path(
                         os.path.join(rule_dir, subrule_file_name)
                     )
@@ -873,7 +873,7 @@ class Rule(object):
                     )
                 elif line.startswith("-import"):
                     # Import directive
-                    imported_file_name = line[len("-import") + 1:]
+                    imported_file_name = line[len("-import") + 1:].strip()
                     imported_file_path = Path(
                         os.path.join(rule_dir, imported_file_name)
                     )

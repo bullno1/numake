@@ -1,5 +1,5 @@
 all: << EXPECTED_PWD ! live
 	assert-equal '${EXPECTED_PWD}' '$(pwd)'
 
--include subdir/sub.nmk
--import subdir/sub2.nmk
+-include  subdir/sub.nmk       # how about this?
+-import   subdir/sub2.nmk      # how about this?
