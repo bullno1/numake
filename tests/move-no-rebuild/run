@@ -1,0 +1,12 @@
+#!/bin/sh -e
+
+pushd old-dir
+numake
+rm rebuilt
+popd
+
+mv old-dir new-dir
+
+cd new-dir
+numake
+assert '[ ! -f rebuilt ]'

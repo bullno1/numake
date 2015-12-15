@@ -1,0 +1,11 @@
+all: a
+	touch rebuilt
+	cat ${deps} > $@
+
+a: b
+	touch rebuilt
+	cat ${deps} > $@
+
+b: c
+	touch rebuilt
+	cat ${deps} > $@

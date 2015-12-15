@@ -232,7 +232,7 @@ class Context(object):
         db.reset_target(target, rule, build_vars)
 
         # Build environment variables
-        out = os.path.relpath(target.absolute, rule.working_directory)
+        out = os.path.relpath(target.absolute, rule.working_directory.absolute)
         env = {
             "NUMAKE": os.path.realpath(sys.argv[0]),
             "NUMAKE_AGENT_PORT": str(self.agent_port),
@@ -261,7 +261,7 @@ class Context(object):
             stdin = subprocess.PIPE,
             stdout = subprocess.PIPE,
             stderr = subprocess.STDOUT,
-            cwd = rule.working_directory,
+            cwd = rule.working_directory.absolute,
             env = env
         )
 
@@ -350,7 +350,7 @@ class Context(object):
                 self._rules = Rule.parse(
                     self,
                     rule_path,
-                    os.path.dirname(rule_path.absolute),
+                    Path(os.path.dirname(rule_path.absolute)),
                     self.env.copy()
                 )
             else:
@@ -439,7 +439,7 @@ class Context(object):
             return self.rebuild(target, rule, match)
 
         # A change in rule triggers a rebuild
-        if rule.checksum != db.get_rule_checksum(target):
+        if rule.get_checksum(self) != db.get_rule_checksum(target):
             self.logger.debug(" Target's rule changed")
             return self.rebuild(target, rule, match)
 
@@ -602,7 +602,7 @@ class Db(object):
             target_type = FileTypes.LIVE_TARGET
         else:
             target_type = FileTypes.REGULAR_TARGET
-        rule_checksum = rule.checksum
+        rule_checksum = rule.get_checksum(self.ctx)
         canonical_path = target.get_canonical(self.ctx)
         with self.conn:
             # Why INSERT OR IGNORE?
@@ -632,7 +632,7 @@ class Db(object):
         build_vars_params = [
             (canonical_path, name, value) for name, value in build_vars.items()
         ]
-        rule_checksum = rule.checksum
+        rule_checksum = rule.get_checksum(self.ctx)
         with self.conn:
             self.conn.execute(
                 "DELETE FROM dependency WHERE src = ?",
@@ -788,13 +788,6 @@ class Path(object):
     def __repr__(self):
         return "Path({0})".format(repr(self.absolute))
 
-class JsonEncoder(json.JSONEncoder):
-    def default(self, obj):
-        try:
-            return super(JsonEncoder, self).default(obj)
-        except TypeError:
-            return repr(obj)
-
 class Rule(object):
     EXTRA_ATTRS = [
         "live"
@@ -874,7 +867,7 @@ class Rule(object):
                         Rule.parse(
                             ctx,
                             subrule_file_path,
-                            os.path.dirname(subrule_file_path.absolute),
+                            Path(os.path.dirname(subrule_file_path.absolute)),
                             env.copy()
                         )
                     )
@@ -944,7 +937,7 @@ class Rule(object):
                     tokens = line.rsplit(":", 1)
                     rule_pattern = Path(
                         os.path.join(
-                            working_directory,
+                            working_directory.absolute,
                             shell_eval(tokens[0], env, rule_dir),
                         )
                     )
@@ -1015,9 +1008,11 @@ class Rule(object):
         )
         return regular_dep_prolog + "\n" + order_dep_prolog + "\n"
 
-    @property
-    def checksum(self):
-        json_str = json.dumps(self.__dict__, cls = JsonEncoder, sort_keys = True)
+    def get_checksum(self, ctx):
+        state = self.__dict__.copy()
+        state["working_directory"] = self.working_directory.get_canonical(ctx)
+        state["pattern"] = self.pattern.get_canonical(ctx)
+        json_str = json.dumps(state, sort_keys = True)
         return hashlib.sha1(json_str.encode("utf-8")).hexdigest()
 
     @property
