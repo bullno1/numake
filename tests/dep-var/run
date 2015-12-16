@@ -1,5 +1,8 @@
 #!/bin/sh -e
 
+# Regular dependencies and order-only dependencies are exposed as local
+# variables
+
 numake
 
 assert-equal '"regular1 regular2"' '`cat deps`'

@@ -1,5 +1,7 @@
 #!/bin/sh -e
 
+# Some misc error
+
 assert-fail numake wat
 touch rules.nmk
 assert-fail numake wat

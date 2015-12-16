@@ -1,5 +1,7 @@
 #!/bin/bash -e
 
+# Moving a project to a different directory will not trigger rebuild
+
 export test_dir=$(readlink -f $(pwd))
 
 pushd old-dir

@@ -1,5 +1,8 @@
 #!/bin/sh -e
 
+# Verify that all targets, even live ones are only visited and rebuilt once
+# per top-level invocation of numake
+
 rm -rf log
 numake
 

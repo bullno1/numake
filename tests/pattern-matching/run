@@ -1,5 +1,7 @@
 #!/bin/sh -e
 
+# Verify pattern matching correctness
+
 numake
 
 assert-equal 'generic,match=gen' '`cat gen.out`'

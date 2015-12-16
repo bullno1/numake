@@ -1,5 +1,8 @@
 #!/bin/sh -e
 
+# Verify the behaviour of order-only dependency: must be kept up-to-date but
+# changes do not trigger a rebuild of targets which depend on it
+
 assert numake
 
 assert '[ -f rebuilt-all ]'

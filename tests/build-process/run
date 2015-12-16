@@ -1,5 +1,7 @@
 #!/bin/sh -e
 
+# Verify dependency checking and rebuild process
+
 echo a > d
 
 # Check build order

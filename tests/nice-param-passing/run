@@ -1,5 +1,10 @@
 #!/bin/sh -e
 
+# parameters can also be passed as:
+# "numake param1=value1 param2=value2"
+# instead of just:
+# "param1=value param2=value numake"
+
 numake write text=hi file=out
 assert-equal '"hi"' '`cat out`'
 

@@ -1,4 +1,6 @@
 #!/bin/sh -e
 
+# "-import dir" is implicitly "-import dir/rules.nmk"
+
 assert numake pass
 assert-fail numake fail

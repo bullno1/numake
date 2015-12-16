@@ -1,5 +1,7 @@
 #!/bin/sh -e
 
+# Partial output from rules will never be accepted and must be rebuilt
+
 assert-fail EXIT_CODE=1 numake
 assert '[ -f dependency ]'
 assert '[ ! -f all ]'

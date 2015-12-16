@@ -1,5 +1,7 @@
 #!/bin/sh -e
 
+# Verify variable substitution and scoping rules
+
 numake
 
 assert '[ -f all ]'

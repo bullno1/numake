@@ -1,5 +1,9 @@
 #!/bin/sh -e
 
+# Verify that environment variables are always propagated to descendant
+# instances even though some intermediate descendants do not import some
+# variables
+
 numake
 
 assert-equal '"cascaded"' '`cat c`'

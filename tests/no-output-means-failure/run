@@ -1,5 +1,7 @@
 #!/bin/sh -e
 
+# A non-live target must create an output
+
 assert-fail numake
 cat rules-new.nmk > rules.nmk
 

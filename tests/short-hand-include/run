@@ -1,4 +1,6 @@
 #!/bin/sh -e
 
+# "-include dir" is implicitly "-include dir/rules.nmk"
+
 assert numake pass
 assert-fail numake fail

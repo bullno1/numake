@@ -1,5 +1,7 @@
 #!/bin/sh -e
 
+# A target can depend on a directory instead of just a file
+
 numake
 
 # No rebuild should happen
