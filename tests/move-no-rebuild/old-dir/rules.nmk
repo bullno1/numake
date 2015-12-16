@@ -2,7 +2,7 @@ all: a
 	touch rebuilt
 	cat ${deps} > $@
 
-a: b
+a: b ${test_dir}/run << test_dir
 	touch rebuilt
 	cat ${deps} > $@
 

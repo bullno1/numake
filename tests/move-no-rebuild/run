@@ -1,5 +1,7 @@
 #!/bin/bash -e
 
+export test_dir=$(readlink -f $(pwd))
+
 pushd old-dir
 numake
 rm rebuilt
@@ -7,6 +9,14 @@ popd
 
 mv old-dir new-dir
 
-cd new-dir
+pushd new-dir
+numake
+assert '[ ! -f rebuilt ]'
+popd
+
+mkdir subdir
+mv new-dir subdir
+
+cd subdir/new-dir
 numake
 assert '[ ! -f rebuilt ]'

@@ -780,10 +780,16 @@ class Path(object):
         self.absolute = os.path.abspath(path)
 
     def get_friendly(self, context):
-        return os.path.relpath(self.absolute, context.start_dir)
+        if self.absolute.startswith(context.root_dir):
+            return os.path.relpath(self.absolute, context.start_dir)
+        else:
+            return self.absolute
 
     def get_canonical(self, context):
-        return os.path.relpath(self.absolute, context.root_dir)
+        if self.absolute.startswith(context.root_dir):
+            return os.path.relpath(self.absolute, context.root_dir)
+        else:
+            return self.absolute
 
     def __repr__(self):
         return "Path({0})".format(repr(self.absolute))
