@@ -117,7 +117,7 @@ class Commands(object):
     def clean(args, env):
         with Context.create(env = env) as context:
             for target in context.db.get_all_targets():
-                if os.path.isfile(target.absolute):
+                if os.path.exists(target.absolute):
                     print("rm {0}".format(target.get_friendly(context)))
                     rm(target.absolute)
 
