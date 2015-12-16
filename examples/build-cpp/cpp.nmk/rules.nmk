@@ -28,11 +28,13 @@ $BUILD_DIR/exe-%: << sources BUILD_DIR linker LINKER
 
 COMPILE = $(readlink -f compile.sh)
 
-$BUILD_DIR/%.c.o: ${COMPILE} %.c << COMPILE c_compiler C_COMPILER c_flags C_FLAGS
-	${deps} "$@" "${c_compiler:-${C_COMPILER}}" "${c_flags:-${C_FLAGS}}"
+$BUILD_DIR/%.c.o: %.c << COMPILE c_compiler C_COMPILER c_flags C_FLAGS
+	${NUMAKE} --depend ${COMPILE} # Compilation depends on the compile script too
+	${COMPILE} "${deps}" "$@" "${c_compiler:-${C_COMPILER}}" "${c_flags:-${C_FLAGS}}"
 
-$BUILD_DIR/%.cpp.o: ${COMPILE} %.cpp << COMPILE compile cpp_compiler CPP_COMPILER cpp_flags CPP_FLAGS
-	${deps} "$@" "${cpp_compiler:-${CPP_COMPILER}}" "${cpp_flags:-${C_FLAGS}}"
+$BUILD_DIR/%.cpp.o: %.cpp << COMPILE compile cpp_compiler CPP_COMPILER cpp_flags CPP_FLAGS
+	${NUMAKE} --depend ${COMPILE}
+	${COMPILE} "${deps}" "$@" "${cpp_compiler:-${CPP_COMPILER}}" "${cpp_flags:-${C_FLAGS}}"
 
 $BUILD_DIR/%/:
 	mkdir -p $@
