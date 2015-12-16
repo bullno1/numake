@@ -252,7 +252,9 @@ class Context(object):
         # -e: Stop execution on first error
         # -x: Trace commands
         # Passing in "out" will make $@ point to output like in Makefile
-        if self.logger.level == LogLevel.TRACE:
+        log_level_is_trace = self.logger.level == LogLevel.TRACE
+        trace_command_on = (self.env.get("NUMAKE_TRACE_CMD", "") or "0") != "0"
+        if log_level_is_trace or trace_command_on:
             cmd = ["sh", "-s", "-e", "-x", out]
         else:
             cmd = ["sh", "-s", "-e", out]
