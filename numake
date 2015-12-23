@@ -94,17 +94,18 @@ class Commands(object):
 
             garbage_nodes = []
             for node_name, node_type in nodes:
+                node = Path(os.path.join(context.root_dir, node_name))
                 if node_type == FileTypes.SOURCE:
-                    if not os.path.exists(node_name):
+                    if not os.path.exists(node.absolute):
                         context.logger.info(
                             "Removing non-existent source file: {0}",
-                            Path(node_name).get_friendly(context)
+                            node.get_friendly(context)
                         )
                         garbage_nodes.append(node_name)
-                elif not context.find_rule(Path(node_name)):
+                elif not context.find_rule(node):
                     context.logger.info(
                         "Removing target with no rules: {0}",
-                        Path(node_name).get_friendly(context)
+                        node.get_friendly(context)
                     )
                     garbage_nodes.append(node_name)
             context.db.delete_nodes(garbage_nodes)
@@ -112,16 +113,35 @@ class Commands(object):
     @staticmethod
     def targets(args, env):
         with Context.create(env = env) as context:
-            for target in context.db.get_all_targets():
-                print(target.get_friendly(context))
+            nodes, edges = context.db.get_build_graph()
+
+            for node_name, node_type in nodes:
+                if node_type == FileTypes.LIVE_TARGET or node_type == FileTypes.REGULAR_TARGET:
+                    node = Path(os.path.join(context.root_dir, node_name))
+                    print(node.get_friendly(context))
+
+    @staticmethod
+    def sources(args, env):
+        with Context.create(env = env) as context:
+            nodes, edges = context.db.get_build_graph()
+
+            for node_name, node_type in nodes:
+                if node_type == FileTypes.SOURCE:
+                    node = Path(os.path.join(context.root_dir, node_name))
+                    print(node.get_friendly(context))
 
     @staticmethod
     def clean(args, env):
         with Context.create(env = env) as context:
-            for target in context.db.get_all_targets():
-                if os.path.exists(target.absolute):
-                    print("rm {0}".format(target.get_friendly(context)))
-                    rm(target.absolute)
+            nodes, edges = context.db.get_build_graph()
+
+            for node_name, node_type in nodes:
+                node = Path(os.path.join(context.root_dir, node_name))
+                is_target = node_type == FileTypes.LIVE_TARGET or node_type == FileTypes.REGULAR_TARGET
+                exists = os.path.exists(node.absolute)
+                if is_target and exists:
+                    print("rm {0}".format(node.get_friendly(context)))
+                    rm(node.absolute)
 
     @staticmethod
     def init(args, env):
@@ -738,18 +758,6 @@ class Db(object):
                 """,
                 dependencies
             )
-
-    def get_all_targets(self):
-        targets = []
-        with self.conn:
-            cursor = self.conn.execute(
-                "SELECT name FROM file WHERE type = ? OR type = ?",
-                (FileTypes.REGULAR_TARGET, FileTypes.LIVE_TARGET)
-            )
-            for row in cursor:
-                targets.append(Path(os.path.join(self.ctx.root_dir, row[0])))
-
-        return targets
 
     def get_build_graph(self):
         with self.conn:
