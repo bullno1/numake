@@ -7,4 +7,4 @@ sub: << EXPECTED_PWD ! live
 ../tricky: << EXPECTED_PWD ! live
 	assert-equal '${EXPECTED_PWD}' '$(pwd)'
 
--include ../another.nmk
+-include ../another.nu

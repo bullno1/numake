@@ -12,6 +12,8 @@ import hashlib
 import socket
 import pickle
 
+ROOT_FILE_NAME="Makefile.nu"
+
 def main(*args):
     env, args = parse_args(args[1:], os.environ)
     return dispatch_cmd("numake", args, env)
@@ -348,7 +350,7 @@ class Context(object):
             if self.parent:
                 self._rules = self.parent.rules
             elif self.is_root:
-                rule_path = Path(os.path.join(self.root_dir, "rules.nmk"))
+                rule_path = Path(os.path.join(self.root_dir, ROOT_FILE_NAME))
                 self._rules = Rule.parse(
                     self,
                     rule_path,
@@ -864,7 +866,7 @@ class Rule(object):
                     if os.path.isdir(subrule_file_path.absolute):
                         subrule_file_path = Path(
                             os.path.join(
-                                subrule_file_path.absolute, "rules.nmk"
+                                subrule_file_path.absolute, ROOT_FILE_NAME
                             )
                         )
                     ctx.logger.trace(
@@ -888,7 +890,7 @@ class Rule(object):
                     if os.path.isdir(imported_file_path.absolute):
                         imported_file_path = Path(
                             os.path.join(
-                                imported_file_path.absolute, "rules.nmk"
+                                imported_file_path.absolute, ROOT_FILE_NAME
                             )
                         )
                     ctx.logger.trace(

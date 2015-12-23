@@ -1,6 +1,6 @@
 #!/bin/sh -e
 
-# "-import dir" is implicitly "-import dir/rules.nmk"
+# "-import dir" is implicitly "-import dir/Makefile.nu"
 
 assert numake pass
 assert-fail numake fail

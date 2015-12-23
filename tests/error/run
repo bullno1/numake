@@ -3,6 +3,6 @@
 # Some misc error
 
 assert-fail numake wat
-touch rules.nmk
+touch Makefile.nu
 assert-fail numake wat
 assert-fail numake --wat

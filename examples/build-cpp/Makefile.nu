@@ -2,7 +2,7 @@ BUILD_DIR = ${BUILD_DIR:-tmp}
 C_FLAGS = -Wall -Werror
 CPP_FLAGS = -Wall -Werror
 
--import cpp.nmk
+-import cpp.nu
 
 all: program ! live
 

@@ -9,4 +9,4 @@ specific.out:
 print:%: << file ! live
 	echo $m > ${file}
 
--include subdir/rules.nmk
+-include subdir/Makefile.nu

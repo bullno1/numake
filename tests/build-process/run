@@ -102,7 +102,7 @@ assert '[ ! -f log ]'
 
 # Rule change triggers rebuild
 rm -rf log
-cp rules-new.nmk rules.nmk
+cp rules-new.nu Makefile.nu
 PATH=/opt/wat:$PATH assert VAR=new numake a
 
 assert 'diff log3 log'

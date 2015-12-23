@@ -3,6 +3,6 @@
 # A non-live target must create an output
 
 assert-fail numake
-cat rules-new.nmk > rules.nmk
+cat rules-new.nu > Makefile.nu
 
 assert numake

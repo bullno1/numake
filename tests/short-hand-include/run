@@ -1,6 +1,6 @@
 #!/bin/sh -e
 
-# "-include dir" is implicitly "-include dir/rules.nmk"
+# "-include dir" is implicitly "-include dir/Makefile.nu"
 
 assert numake pass
 assert-fail numake fail

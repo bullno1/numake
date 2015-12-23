@@ -7,7 +7,7 @@ var2 = abcd
 var3 = ${var3:-abcd}
 var4 = ${var2} + ${var3}
 
--import sub/sub.nmk
+-import sub/sub.nu
 
 scoped: << scoped
 	echo ${scoped} > $@
