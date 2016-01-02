@@ -148,6 +148,14 @@ class Commands(object):
         ensure_dir(os.path.join(os.path.abspath(os.path.curdir), ".numake"))
 
     @staticmethod
+    def enable_trace(args, env):
+        with Context.create(env = env) as context:
+            if (context.env.get("NUMAKE_TRACE_CMD", "") or "0") != "0":
+                print("set -x")
+            else:
+                print(":")
+
+    @staticmethod
     def __build(dependency_type, targets, env):
         targets = [Path(target) for target in targets]
 
