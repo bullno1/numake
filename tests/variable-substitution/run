@@ -11,7 +11,7 @@ assert '[ -f abcd ]'
 assert-equal 'default_val' '`cat all`'
 assert-equal 'default2_val' '`cat abcd`'
 assert-equal '' '`cat abcd-efgh`'
-assert-equal 'outer' '`cat scoped`'
+assert-equal 'inner' '`cat scoped`'
 assert-equal 'inner' '`cat inner`'
 assert-equal 'aye' '`cat check-pwd`'
 
