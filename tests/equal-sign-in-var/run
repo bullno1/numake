@@ -1,0 +1,4 @@
+#!/bin/sh -e
+
+assert numake
+assert-equal '"key=value"' '`cat sub`'

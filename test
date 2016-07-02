@@ -1,23 +1,18 @@
 #!/bin/bash -e
 
-EXIT_CODE=0
 DO_COVERAGE=1
 
 main() {
-	test_with_version 2 $* || EXIT_CODE=1
-	echo
-	test_with_version 3 $* || EXIT_CODE=1
+	test_with_version 2 $*
+	test_with_version 3 $*
 
-	echo
 	if command -v pypy > /dev/null; then
 		PYPY_PATH=`which pypy`
 		echo "Found PyPy at: ${PYPY_PATH}"
-		test_with_python pypy ${PYPY_PATH} $* || EXIT_CODE=1
+		test_with_python pypy ${PYPY_PATH} $*
 	else
 		echo "Could not find PyPy"
 	fi
-
-	exit $EXIT_CODE
 }
 
 test_with_version() {
