@@ -1,6 +1,7 @@
 numake
 ======
 
+[![License](https://img.shields.io/badge/license-BSD-blue.svg)](LICENSE)
 [![Build Status](https://travis-ci.org/bullno1/numake.svg?branch=master)](https://travis-ci.org/bullno1/numake)
 [![Coverage Status](https://coveralls.io/repos/github/bullno1/numake/badge.svg?branch=master)](https://coveralls.io/github/bullno1/numake?branch=master)
 

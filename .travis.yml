@@ -12,6 +12,7 @@ script:
 env:
   - NUMAKE_LOG_LEVEL=TRACE DO_COVERAGE=1
 after_success:
+  - coveralls debug
   - coveralls
 sudo: required
 dist: trusty
