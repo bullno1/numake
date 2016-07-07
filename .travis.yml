@@ -6,8 +6,13 @@ python:
   - "3.4"
   - "3.5"
   - "pypy"
-script: ./test-with-current-python
+install:
+  - pip install coveralls
+script:
+  - ./test-with-current-python
 env:
-  - NUMAKE_LOG_LEVEL=TRACE
+  - NUMAKE_LOG_LEVEL=TRACE DO_COVERAGE=1
+after_success:
+  - coveralls
 sudo: required
 dist: trusty
