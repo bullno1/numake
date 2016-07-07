@@ -10,9 +10,9 @@ install:
 script:
   - ./test-with-current-python
 env:
-  - NUMAKE_LOG_LEVEL=TRACE DO_COVERAGE=1
+  - NUMAKE_LOG_LEVEL=TRACE
 after_success:
-  - coveralls debug
+  - find .tests/pythons -name .coverage | xargs coverage combine
   - coveralls
 sudo: required
 dist: trusty
