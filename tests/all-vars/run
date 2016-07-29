@@ -1,0 +1,4 @@
+#!/bin/sh -e
+
+assert numake
+assert-equal '"some-value"' '`cat test`'
