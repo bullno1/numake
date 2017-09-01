@@ -256,11 +256,9 @@ class Context(object):
         return self
 
     def __exit__(self, type, value, stacktrace):
-        self.close()
-
-    def close(self):
         if self.agent:
             self._query_agent("stop")
+            self.agent.join()
         if self._rpc_sock:
             self._rpc_sock.close()
 
