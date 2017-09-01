@@ -1,0 +1,5 @@
+#!/bin/sh -e
+
+# Test whether numake can handle unicode output
+
+numake
