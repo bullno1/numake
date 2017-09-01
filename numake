@@ -15,7 +15,7 @@ import pickle
 ROOT_FILE_NAME="Makefile.nu"
 
 def main(*args):
-    env, args = parse_args(args[1:], os.environ)
+    env, args = parse_args(args[1:], os.environ.copy())
     return dispatch_cmd("numake", args, env)
 
 def parse_args(args, env):
