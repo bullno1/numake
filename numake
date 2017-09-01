@@ -344,8 +344,10 @@ class Context(object):
         write_thread = WriteThread(rule, build_process.stdin)
         write_thread.start()
 
-        for line in build_process.stdout:
+        line = build_process.stdout.readline()
+        while line:
             self.logger.info(u"  {0}", line.decode("utf-8").rstrip("\r\n"))
+            line = build_process.stdout.readline()
 
         write_thread.join()
         build_process.wait()
